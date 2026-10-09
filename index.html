@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BulkLot — Pokémon inventory sourcing network</title>
+<meta name="theme-color" content="#1a1a18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a1a18;--bg2:#1f1f1c;--panel:#23231f;--panel2:#2a2a26;--line:#33322d;--line2:#41403a;
+  --ink:#eeebe2;--ink2:#c9c5ba;--mute:#8e8a7f;--faint:#5f5c54;
+  --agent:#8fa3d9;--agent-dim:#3b4462;--scout:#d2a660;--scout-dim:#5a4a2c;
+  --ok:#9cc49a;--bad:#d98b80;--btn:#ece8dd;--btn-ink:#1a1a18;
+  --hero1:#262a3a;--hero2:#1d1c1a;
+  --r-sm:6px;--r:10px;--r-lg:14px;
+  --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#efece4;--bg2:#e8e4da;--panel:#f6f4ee;--panel2:#e9e5db;--line:#d8d3c6;--line2:#c6c0b1;
+  --ink:#1c1b18;--ink2:#3a3833;--mute:#6f6b61;--faint:#a29d90;
+  --agent:#3f58a3;--agent-dim:#c9d1ea;--scout:#9a6b1f;--scout-dim:#ead8b6;
+  --ok:#3f7a3c;--bad:#a5463a;--btn:#1c1b18;--btn-ink:#efece4;--hero1:#d9dbe6;--hero2:#ece8de;color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#efece4;--bg2:#e8e4da;--panel:#f6f4ee;--panel2:#e9e5db;--line:#d8d3c6;--line2:#c6c0b1;
+  --ink:#1c1b18;--ink2:#3a3833;--mute:#6f6b61;--faint:#a29d90;
+  --agent:#3f58a3;--agent-dim:#c9d1ea;--scout:#9a6b1f;--scout-dim:#ead8b6;
+  --ok:#3f7a3c;--bad:#a5463a;--btn:#1c1b18;--btn-ink:#efece4;--hero1:#d9dbe6;--hero2:#ece8de;color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1,"ss01" 1}
+img,svg{max-width:100%}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--agent);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* logo uses the uploaded mark as a mask so it follows the theme */
+.mark{display:inline-block;background:currentColor;-webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat;aspect-ratio:277/320}
+
+/* ribbon */
+.ribbon{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:14px}
+.ribbon .l{display:flex;align-items:center;gap:10px;font-style:italic;font-weight:500}
+.ribbon .l .mark{width:13px}
+.ribbon .l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ribbon button{white-space:nowrap;background:none;border:0;color:var(--ink2);font-size:13px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.ribbon button:hover{color:var(--ink)}
+
+/* shell */
+.shell{display:grid;grid-template-columns:300px 1fr;height:calc(100% - 40px)}
+.shell.collapsed{grid-template-columns:76px 1fr}
+.side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+.brand{height:88px;display:flex;align-items:center;gap:14px;padding:0 26px;border-bottom:1px solid var(--line);text-decoration:none}
+.brand .mark{width:26px;color:var(--ink)}
+.brand b{font-weight:600;letter-spacing:.02em;font-size:18px}
+.nav{flex:1;overflow:auto;padding:14px 10px}
+.nav a{display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:var(--r-sm);text-decoration:none;color:var(--ink2);font-size:17px;margin-bottom:4px}
+.nav a:hover{color:var(--ink);background:var(--panel)}
+.nav a.on{background:var(--panel2);color:var(--ink)}
+.nav a svg{width:18px;height:18px;flex:none}
+.nav .sub{margin:0 0 6px 30px;padding-left:12px;border-left:1px solid var(--line)}
+.nav .sub a{font-size:15.5px;padding:9px 14px}
+.nav h6{margin:26px 16px 10px;font-size:13px;font-weight:500;color:var(--mute);letter-spacing:.06em}
+.nav .ext{margin-left:auto;opacity:.6}
+.sidefoot{border-top:1px solid var(--line);padding:12px 10px}
+.sidefoot button{display:flex;align-items:center;gap:16px;width:100%;background:none;border:0;padding:11px 16px;color:var(--ink2);font-size:16px;cursor:pointer;border-radius:var(--r-sm);text-align:left}
+.sidefoot button:hover{background:var(--panel);color:var(--ink)}
+.sidefoot svg{width:18px;height:18px;flex:none}
+.shell.collapsed .nav a span,.shell.collapsed .nav h6,.shell.collapsed .sidefoot span,.shell.collapsed .brand b,.shell.collapsed .nav .sub,.shell.collapsed .nav .ext{display:none}
+.shell.collapsed .brand{padding:0 25px}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{height:88px;flex:none;display:flex;align-items:center;gap:14px;padding:0 22px 0 34px;border-bottom:1px solid var(--line)}
+.crumbs{font-size:17px;color:var(--mute);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.crumbs b{color:var(--ink);font-weight:500}
+.top .sp{flex:1}
+.iconbtn{width:46px;height:46px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg2);display:grid;place-items:center;cursor:pointer;position:relative;color:var(--ink)}
+.iconbtn .dot{position:absolute;top:9px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--scout)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 18px;border-radius:var(--r-sm);border:1px solid transparent;background:var(--btn);color:var(--btn-ink);font-weight:500;font-size:16px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn.ghost:hover{background:var(--panel2)}
+.btn.sm{height:38px;font-size:14.5px;padding:0 14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:16px;height:16px}
+.menubtn{display:none}
+.wallet-pill .av{width:20px;height:20px;border-radius:50%;flex:none}
+
+#view{flex:1;overflow:auto;padding:22px 34px 90px}
+.wrap{max-width:1720px;margin:0 auto}
+
+/* hero */
+.hero{position:relative;border-radius:var(--r-lg);overflow:hidden;min-height:470px;background:radial-gradient(120% 120% at 85% 10%,var(--hero1),var(--hero2) 60%);border:1px solid var(--line);isolation:isolate}
+.hero svg.scene{position:absolute;right:2%;top:6%;width:48%;height:84%;z-index:-1}
+.hero .copy{padding:150px 68px 60px;max-width:820px}
+.hero .kick{font-size:14px;color:var(--ink2);letter-spacing:.04em;margin-bottom:14px}
+.hero h1{font-size:clamp(44px,6.2vw,92px);line-height:.98;letter-spacing:-.045em;font-weight:600;margin:0 0 22px}
+.hero p{font-size:19px;color:var(--ink2);margin:0 0 26px;max-width:560px}
+.hero .stats{display:flex;gap:56px;flex-wrap:wrap;border-top:1px solid color-mix(in srgb,var(--ink) 18%,transparent);margin:0 68px;padding:26px 0 40px}
+.hero .stats .k{font-size:13px;letter-spacing:.06em;color:var(--ink2)}
+.hero .stats .v{font-size:34px;font-weight:500;letter-spacing:-.02em}
+.hero .stats .s{font-size:14px;color:var(--mute)}
+
+.notice{margin-top:18px;border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:16px 26px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:16.5px}
+.notice a{text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+.grid{display:grid;gap:18px;margin-top:18px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+.g21{grid-template-columns:1.55fr 1fr}
+.g12{grid-template-columns:1fr 1.4fr}
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.statrow>div{padding:26px 28px;border-left:1px solid var(--line)}
+.statrow>div:first-child{border-left:0}
+.statrow .k{font-size:15px;color:var(--ink2)}
+.statrow .v{font-size:34px;letter-spacing:-.02em;margin:6px 0 2px;font-weight:500}
+.statrow .s{font-size:14.5px;color:var(--mute)}
+
+.card{border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:28px;min-width:0}
+.card .lab{font-size:13.5px;letter-spacing:.07em;color:var(--mute);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card h3{font-size:28px;font-weight:500;letter-spacing:-.02em;margin:0 0 10px}
+.card p{color:var(--ink2);margin:0 0 18px;font-size:16.5px}
+.card .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:auto}
+.card.flex{display:flex;flex-direction:column}
+.muted{color:var(--mute)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:5px 13px;border-radius:999px;font-size:14px;background:var(--panel2);color:var(--ink2)}
+.chip i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.agent{color:var(--agent);background:color-mix(in srgb,var(--agent) 14%,transparent)}
+.chip.scout{color:var(--scout);background:color-mix(in srgb,var(--scout) 14%,transparent)}
+.chip.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+
+.section-h{display:flex;align-items:center;gap:24px;margin:56px 0 4px;font-size:20px;letter-spacing:.1em;font-weight:500}
+.section-h::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:4px;gap:2px}
+.tabs button{border:0;background:none;padding:8px 14px;border-radius:7px;color:var(--mute);cursor:pointer;font-size:15px}
+.tabs button.on{background:var(--panel2);color:var(--ink)}
+
+.big{font-size:56px;letter-spacing:-.035em;font-weight:500;line-height:1}
+.bar{height:6px;border-radius:3px;background:var(--panel2);position:relative;overflow:hidden;margin:16px 0 10px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+
+table{width:100%;border-collapse:collapse;font-size:16px}
+th{font-weight:500;color:var(--mute);text-align:left;font-size:14px;padding:14px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.num{text-align:right}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+.av{width:38px;height:38px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;background:var(--panel2);flex:none}
+.who{display:flex;align-items:center;gap:14px}
+.up{color:var(--ok)}.down{color:var(--bad)}
+
+.rows>div{display:flex;justify-content:space-between;gap:18px;padding:18px 0;border-top:1px solid var(--line)}
+.rows>div:first-child{border-top:0}
+.rows .r{text-align:right}
+.rows .r b{font-weight:500;font-size:20px;display:block}
+.rows .r small{color:var(--mute);font-size:14px}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.field label{font-size:14px;color:var(--mute);letter-spacing:.03em}
+.input,select.input,textarea.input{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r-sm);padding:13px 15px;font-size:16px;outline:none}
+textarea.input{min-height:96px;resize:vertical}
+.input:focus{border-color:var(--agent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.check{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line2);border-radius:var(--r-sm);cursor:pointer;background:var(--bg2)}
+.check input{margin-top:4px;accent-color:var(--agent)}
+.check small{display:block;color:var(--mute);font-size:14px}
+
+/* pipeline */
+.steps{list-style:none;margin:0;padding:0}
+.steps li{display:flex;gap:16px;padding:14px 0;border-top:1px solid var(--line);align-items:flex-start}
+.steps li:first-child{border-top:0}
+.steps .n{width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:13px;flex:none;color:var(--mute)}
+.steps li.run .n{border-color:var(--agent);color:var(--agent)}
+.steps li.done .n{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.steps li.wait .n{border-color:var(--scout);color:var(--scout)}
+.steps b{font-weight:500;display:block}
+.steps small{color:var(--mute);font-size:14.5px}
+.log{font-size:14px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;height:200px;overflow:auto;line-height:1.7}
+.log .t{color:var(--faint);margin-right:10px}
+.log .a{color:var(--agent)}.log .s{color:var(--scout)}
+.src{display:inline-flex;align-items:center;gap:8px;font-size:14.5px}
+.src i{width:8px;height:8px;border-radius:2px}
+
+.evidence{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.evidence div{aspect-ratio:3/4;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--bg2);display:grid;place-items:center;overflow:hidden}
+.ticks{list-style:none;padding:0;margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:14.5px;color:var(--ink2)}
+.ticks li::before{content:"✓";color:var(--ok);margin-right:8px}
+
+/* modal / drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,9,.6);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.scrim.on{display:flex}
+.modal{width:min(460px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:var(--r-lg);padding:26px;max-height:90vh;overflow:auto}
+.modal h4{margin:0 0 6px;font-size:22px;font-weight:500}
+.wl{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg2);cursor:pointer;margin-top:10px;text-align:left}
+.wl:hover{border-color:var(--line2);background:var(--panel2)}
+.wl .ic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.wl .st{margin-left:auto;font-size:13px;color:var(--mute)}
+.menu{position:absolute;right:22px;top:80px;width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:8px;z-index:40;display:none;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.menu.on{display:block}
+.menu .hd{padding:12px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.menu button{width:100%;text-align:left;background:none;border:0;padding:11px 12px;border-radius:7px;cursor:pointer;display:flex;justify-content:space-between}
+.menu button:hover{background:var(--panel2)}
+.ledgerbtn{position:fixed;right:22px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;border-radius:999px;height:50px;padding:0 22px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.drawer{position:fixed;right:22px;bottom:calc(80px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100% - 44px));max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r-lg);padding:18px 20px;z-index:30;display:none;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.drawer.on{display:block}
+.drawer .ev{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:14.5px}
+.drawer .ev:first-of-type{border-top:0}
+.toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--btn);color:var(--btn-ink);padding:12px 18px;border-radius:var(--r-sm);font-size:15px;z-index:60;display:none;max-width:calc(100% - 40px)}
+.toast.on{display:block}
+
+.price .amt{font-size:44px;letter-spacing:-.03em;font-weight:500}
+.price ul{padding:0;margin:18px 0 22px;list-style:none;color:var(--ink2);font-size:15.5px}
+.price li{padding:8px 0;border-top:1px solid var(--line)}
+.prose{max-width:720px}
+.prose h2{font-size:clamp(34px,4vw,56px);letter-spacing:-.04em;line-height:1.02;font-weight:600;margin:0 0 18px}
+.prose p{font-size:18px;color:var(--ink2)}
+.supply{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:3px;margin:18px 0}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14.5px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:middle}
+details{border-top:1px solid var(--line);padding:18px 0}
+details summary{cursor:pointer;font-size:18px;font-weight:500;list-style:none;display:flex;justify-content:space-between}
+details summary::after{content:"+";color:var(--mute)}
+details[open] summary::after{content:"–"}
+details p{color:var(--ink2);margin:12px 0 0;max-width:760px}
+.empty{padding:40px;text-align:center;color:var(--mute);border:1px dashed var(--line2);border-radius:var(--r)}
+
+.statrow.s3{grid-template-columns:repeat(3,1fr)}
+.statrow.s3>div{border-top:0!important}
+.statrow.s3>div:nth-child(3){border-left:1px solid var(--line)}
+@media (max-width:1200px){.g4,.statrow{grid-template-columns:1fr 1fr}.statrow>div:nth-child(3){border-left:0}.statrow>div:nth-child(n+3){border-top:1px solid var(--line)}.g21,.g12,.g3{grid-template-columns:1fr}}
+@media (max-width:860px){
+  .shell,.shell.collapsed{grid-template-columns:1fr}
+  .side{position:fixed;top:0;bottom:0;left:0;width:290px;z-index:45;transform:translateX(-100%);transition:transform .2s;padding-top:env(safe-area-inset-top,0px)}
+  .side.open{transform:none}
+  .menubtn{display:grid}
+  .top{padding:0 14px;height:70px}
+  .top .crumbs{font-size:15px}
+  #view{padding:14px 14px 90px}
+  .hero .copy{padding:90px 24px 30px}
+  .hero svg.scene{width:100%;right:-20%;opacity:.3}
+  .hero .stats{margin:0 24px;gap:28px}
+  .g2,.g4,.statrow,.statrow.s3{grid-template-columns:1fr}
+  .statrow.s3>div{border-left:0!important;border-top:1px solid var(--line)!important}
+  .statrow.s3>div:first-child{border-top:0!important}
+  .statrow>div{border-left:0;border-top:1px solid var(--line)}
+  .statrow>div:first-child{border-top:0}
+  .row2,.ticks{grid-template-columns:1fr}
+  .wallet-pill .lbl{display:none}
+  .wallet-pill{width:46px;padding:0}
+  .ribbon{font-size:13px;padding:0 12px;gap:10px}
+  .ledgerbtn{height:44px;padding:0 16px;font-size:14px}
+  .menu{right:10px;top:66px}
+  .big{font-size:42px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="ribbon">
+  <div class="l"><span class="mark"></span>The scout network is live.</div>
+  <button onclick="go('desk')">Start a request <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+<div class="shell" id="shell">
+  <aside class="side" id="side">
+    <a class="brand" href="#home" onclick="closeSide()"><span class="mark"></span><b>BULKLOT</b></a>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidefoot">
+      <button onclick="toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span id="themeLbl">Light mode</span></button>
+      <button onclick="toggleCollapse()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Collapse sidebar</span></button>
+      <button onclick="openModal('disc')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span>Disclaimer</span></button>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menubtn" aria-label="Open menu" onclick="document.getElementById('side').classList.toggle('open')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="sp"></div>
+      <button class="iconbtn" aria-label="Notifications" onclick="toggleDrawer()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
+      <button class="btn wallet-pill" id="walletBtn" onclick="walletClick()"><span class="lbl">Connect wallet</span></button>
+    </header>
+    <div class="menu" id="wmenu"></div>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<button class="btn ledgerbtn" onclick="toggleDrawer()">Live ledger</button>
+<div class="drawer" id="drawer"><div class="card-lab" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-weight:500">Live ledger</b><span class="chip ok"><i></i>Streaming</span></div><div id="ledger"></div></div>
+
+<div class="scrim" id="m-wallet" onclick="if(event.target===this)closeModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wt">
+    <h4 id="wt">Connect a Solana wallet</h4>
+    <p class="muted" style="margin:0 0 8px;font-size:15px">Your wallet is your BulkLot account. It authorizes scouts, approves purchases and holds $BULK.</p>
+    <div id="wlist"></div>
+    <p class="muted" style="font-size:13.5px;margin:16px 0 0">Connecting only shares your public address. BulkLot never asks for your seed phrase.</p>
+  </div>
+</div>
+<div class="scrim" id="m-disc" onclick="if(event.target===this)closeModal()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h4>Disclaimer</h4>
+    <p class="muted" style="font-size:15px">BulkLot coordinates sourcing between buyers, sellers and independent scouts. Every purchase requires the buyer's approval, and BulkLot does not guarantee the condition, authenticity or resale value of any lot.</p>
+    <p class="muted" style="font-size:15px">$BULK is a digital asset whose value can fall to zero. Nothing here is investment advice. Buybacks depend on net revenue and are not guaranteed. Pokémon and related names are trademarks of their respective owners; BulkLot is not affiliated with Nintendo, Creatures or Game Freak, nor with any company named as a target customer.</p>
+    <button class="btn" style="width:100%;margin-top:6px" onclick="closeModal()">Close</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl-fast.min.js"></script>
+<script>
+document.documentElement.style.setProperty('--logo','url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARUAAAFACAYAAACSreimAAAh+0lEQVR42u2deaCXU/7HX5W9KEIiJBn7mrETMcLIMi22VLI0lGwTMZaQNbKVrUgaS2Im8sPINoPJvo29xVqISrYidX9/fM53rm7de7/Leb7fc57n/frHMPc+93nOOc/7+Xw+53M+nwZVVVUIIYQvGmoIhBASFSGEREUEy1nAS8COGgrhgwaKqWSW/sAQYLnf/LdngD8DH2h4hERF5EtnYCTQrI6fGQv0AuZruITcH1Eb+wOTgfvrERSAw4B5wOUaNiFRETXZD/gQeARoW+DvngVUAWdrGIXcH7EfcD2wkafrLQIGAEM1tEKiki12Am4Gtk7o+t8CxwEPaKiF3J90szm2ezMpQUEBi8fcD7wGbKNhFxKV9NEa+D/gbaB9Gf/utsDrwEQKj9UIiYoIkFbA34GPgAMqeB/7YLtKDwHra1qEYirx0QQYDvQI9P7GYQl0szVVslRE2KwIXAt8H7CgAHQFZqEcF1kqIlhWcC/oKRHe+yLgVOAGTaMsFREGF2OZradEvL6uB74Gumk6ZamIyjEQuCyFzzUN6As8pimWqIjysLSTw2nkTeAYbEtaSFREAvTAdnSaZOy5HwVOBD7REkgPiqlUliOBr4DRGRQUsJPTHwP3AmtpOchSEcVzIHY+Zx0NxWKMBPoBP2soZKmI/NjJxRMmSFCWynFYYahLNBSyVETdtAOGOVER+fELtlM0UkMhS0VUszHwBPCKBKVglgNGAF9iWbpClkqmaYnFTA7SUHhjGtDHibSQpZIZVgXuAGZIULzTBiuz8CKwlYZDopJ2lsdiJrOBnhqORNmB6mD32hoOiUoaxeRqbMeir4ajrBwITHeW4SoaDolKGrjUicnpGoqK0hOYi52EXkHDIVGJkb+ithUh0g/1KgoC7f7kT3+sPUUjDUU086U6LhKVIDkGuAZoqqGIjjnYgcWxGgqJSgh0Am7Bck5E3HwGnAQ8rKGQqFSCpJtxicrxDpZA97yGIjkUqK2mHdaIK+lmXKJybA48h2XlttFwSFSSYjPgaXQ+J0vsDUwF7gPW0HBIVHzRGnjEmcR7ailkkq7ATOBvEheJSik0B+7BOvvtryUggKOcuAzDsqSFRCUvVnGL5hvgcE29WAp9sSzpszQUxZOF3Z/GwFVYK04h8uUHrBHabRoKWSq/5SK3OCQoolCaYFXn5gC9NByyVE7BUuq1uyV88YVbV+M0FNkSlZOxUgTLampFQkzBUv9VgS7lotIHi5s00ZSKMjEJq/7/roZicWJ3D452Pu/NEhRRZnbGcpzuRzkuqRCVTsDnwJ1AM02jqCCdsRyXG1GOS5Sisj3wGvAQasYlwuJELMflOjIe04tFVLYFngFedv9biFDpjzVCu4SM7j6GHqjdDBiOzuaIeDmXjLVxDVVUWjkftZPWpEgBi7CdolESlfLT1Pmk6p0j0sh0YCOsQHdqCcXnWwPrm/utBEWklCeBLmkXFIBlAhCTa4EjteZESvkXtjP0XlYeuJKici12lkKINPIBdhDxhaw9eCXcn4FYMy4Jikgjc53lvUkWBaXcovIX509epnUnUspALMP7niwPQjlE5WxnmQxBvW5FOhnk3qUrNBTJxlT6YHETCYlIK5divbVFwqLSFasFu6aGV6SUm7CY4AINRbKi0slZJmrSJNLKBCwzdqaGonZ8xFS6YmUIHpKgiJTyPNa18qASBWVb4GCJSt2WySdYlzeVIRBp5H2gPbAb8FYJ11kNq8r/GnCg3J8l2dUN0MZacyKlfAr0c+5OqVwJDPjNv/8sUalmBeAprIyeEGlkLpZS7yPPpBfW4qNRjf++ktyfauZjh/5maO2JFHImfhLXdsXO+YxaiqAALCdRWZxRWPzkGGCW1qFIAVe4l39IidfZEGvb8RyWou8z5JBqUclxB7A61vnvJ61LESEjnCsyECuiVCyrYRX1pwB7J/jOpV5UctyC9So+xblHQoTOWKA5cAKl1za50lnsnQv4nYUSlfy4HljRiYssFxEizzq35HBgdonXOhY7zzagiN+VqBQhLo2BM7SGRSC8je1Y7oHVOCmF7bHclZElXONXiUpx5JqjX6o1LSrEZ8D+wJaUXtekFfAY1iKm1PwsWSolUIWd4GyCHcASohx8C/QA1nNCUAqrAn9zAtXR0/1lzlK5C+ju+W/8CJyEBcdu1ZoXCTLQCcEYD9e6BIu9HOX5HhelfRJqispWbkImU1hEOx9mYzVWZLkI3+RyTXwUSeqGbTack6AFnylRmev+2Rbbe5/uBjkJy6UpGWmuJBJjOH5yTQB2wjJhx2I7mcKTqNT897XdIE8DOnj+298BvZ3vO0FTIQpgDJZ01o/Sc03aAk8Dk6g7E1YUKSoNavm5DbBmSC8C7Tzfw2dYnYqtgMc1JaIO/gmsiwVi55R4rWWwIOxkyturu0HWRKVRPT+/A/CKE5jNPN/Lf7EI+2Zu8QiR413nnuyHFQQrlf5YKcijAnjnMi8qOToA7wDPOAvDJ++5xbMF1t1NZJcvgEOBzZ2VXCoHA19j/borReYOFDYq8PfbA286cfHtFr3jzNLd3ZdKZId52E7h2sB4D9fbzX2sxmMHYStJ5tyfYh+4vXOLJuK/Tu1z7kt1CFaRS6Sbc7EdHR85TRtiQdjcuZ8Q37nUi0qp7ANMBUZj+Sg+eRBYH2sp+YXevdRxofuoXeLhWss7UZpCeYOwYimi4isxpwfwvfNdl/V8z/c4s7gL8JGmMHqGODEZ5Ol6A7AyHMcH+rw6+1Mi/YFfgBux9GmfPOBcrc6yXKJkPHZ040xP1+uEZW1fqaENS1SSOpdwopvw24A1PF/7785y6U11RrAIl0lYD51DKb2uCcBaWDmChxL4cMlSCdBSqUlvrBnT1QlcexRWuLgfqkIXIrkks10orYdOTbqjdjGZFpUcp1NdGsE3w7GzGwOy8FWIgC+w+NfvSCbvaF5k45G5A4XlFpnBWH2J8/G/f38Vlmh0od7rivCDs0zXxuJfSRFby4vMlT6oBI3ci78I2070vVs0CGuEdp3e87IwH6tVvDLlOYXeSEMetqhUOtvvHGy36GzP1/0ZONUtdBWKStbyXBGrVVwuGkT+zslSKROXYvGQkxMwyftgqdp3SQO8cROWBXteBf52bDGKzKXpVwV2b9cD3+C/UNQsbNegJTBOmlA0d2N1TU7Cf8C0HZYZWx8KxstSKZjmWKGoT7HzPz750gnWhqiWSyE8hW3jHkXpdU1qsj7wCHaWrGUePx9bIenUx4DKlfzmg3WBfzhx2dfztadhtVy2Bp6XZtTKm1jvm72BDz1fuzHW8fJjrLVGjIIh94c4g0brYkWc3sAK9/jkLeyY/G7A69KQ/zHTWYnbAK8mcP2LsHjXCUW8gLG9pMpTCZitsZTvScCOnq/9PLAd1cWosso84M9AC+yUuG9OctbIeSW4NrGJSubyVGJ84J2wDnSvJCAuT2MV6PbF0syzxHnYjs4tCVz7CKyrwvB6Ygz5iIryVGSpJEY7Jy7PYBXSfTIRSzM/FPgq5WvieixLdXAC197NifPdTrDqI40xlcy5P2kwzdq7hfsP8ts9KITx2KnY40jfiehxwJpYNuwCz9feHqsx+2yBgp9GV0F5KhFzCDADq0LX1PO1b8NORB+fAnHJdUbohhWF9snG7vovY50YRAYzatOYSNQDa9qdRC2XkU5c+hJfuYV33Iu+D1YU2ifNneXzPqU1ocvnBYzNRdKBwhSRq+VyB/7r596InXk5I4Jx+AqLDW3hLAjf6+kqLAu6S5nWZ2zWtbaUU0hPrH7u5Qlce6jzmS8O8LkXYOee1sJP24uanO4s3TMSXJ+Z/PLLUomHs9xX4+wErn0+trsxLJBnvQzb0UnihHZ3514mUc0vjUHNzJWTTH1keilc6sTlfM/XnYedsm6KneKtBCOcq3dOAtc+GJiONUtvipD7I1FZggvdhA/0fN3vsMzRJsDNZXqW+7Ht9BOwJDOfbI/1vR6PVXWTtS3qnBBNkLkKPwK9PF/3R6yrQO7UdRLk8kC6YiewfdIGSwJ8GQvyCiGVL4CVsFKIM/Bfy2U2cDiwAf4Cpl8BBwB7YB0ifbIitmM2Fdt+Ds1VUKBWohIVLZ1VMQNrt+qTj7Gt3Y2x+iTF8At24G8t4NEEnv9y4Cdsx0wIiYpncbkLy7/o7vnaH2L1SbajsFouA7DKaEkc+DvZWQlnaeq9o3oqYjGaY7sdUyktU3RpvI4duPs98FIdP3elW5hXJfB8XZ0rdX1Ec1KlZSlRSQNtsDMtrwG7er52roTDzixeKGq8E7UkrId9sWb392GHCmP6qjfQcgxbVBT0KoxtgeecuOzl+dovOJdof2B3/PUe/i1bOqvon0BrfRiFJiQscXnKiYvvEpePOeHyyWrOKnnLuVsxow9h4KIi/7R0cZnkXKNNA7y/5bGjA7Ow+IkoP5mrpi9R8UMH4F1nZYQiLhdg5Rn6RjSOWo8pEBWZkn7p6MTlCWCrCt3DsVg+y6CUjrGER5ZKJtkb65nzJLB5mf5me+ATrJDUspGOm8pJpkBURPJu0dvABKBVQn9jQ+DfWAHw9TIwptpSlqgI4EDgM2wHZi1P11wBO6MzBduC1vqUu6ZJyyBdgS+Ae7EewsVyNVa/RWd0hERFAHAYdsDwIay/UCGiVIWVckwjaYypqEiTKCudgA8KEPs++uhJKEOfNFkuYZBvgtQ3KR+HfF5A7VjKUhF5sKDI+RPhs0zWREXNruNioYYgOncic2n6QmgNC7k/+koLiWC4DyjVlykdEvkEYWP7ECpNX0hUhChFVGROp+9Lnvbna6Q5C1tUtOcfF/oIxLdmM5f8pkUaF9pSlgjKUhFeWaAhkHUZuqiIuFAKQHwvqQ4UCi1QiabmTJaKvtJCBCMqEhmJvRBeF6+SqeISFbk/EuDgF6/M6bjQlrIIXlR+1ZAEgcQ9vcKaubM/ylMJgyrPP5d1FykkMlekSclU+kqLMD4YqRGVZppziYoQPkVlENZ3V8TBooytz2J/Ru5aBSdtLLA8cKpcoYqirf38RbOB5jaOL8F1wHLAuVrXQX/NtEskojMvL3EL/DwNVVnJN5gnUYkv8KmzP47BTlwGaQ2XhYWef06CIYITlRwXOp/wCg2dXrpAnk/WWuSikpvEgUATYLiGUIiC3x+JSi38CPQDVgdGaK3IUglsfYqIJ20WcAKwGjBSQ6qvnoQ10x8Cr1+COcDxWFburVrrWqBCloov5gJ9gObAXRriosg3T0Vp+iqBmimfdTbQHVgHeEBDnQgSFfX9yZSo5JgBdAE2Af6pd8DriyL3R3GlTIpKjg+A/YDNgcc19BILIVHxxbtARycuT2kKSooTKJ4Q37ZzQ01IsuKyN7AV8KzeDVk0QqLii/8CewC7A+9oShRPEBIVXzwHbAEcAnwk90eklMzVqA2BB4E2wGHYzpEQQqLihfuwHBeJS+3olLKQqJQgLkcB32jKFkMxlfjGIHNnf4ZhWbAhcjewBtAT+FZiH81HQWTcUtkTGANMd25HiNwJrAr0R5X/hSyr4EVlvvvn2sC92C7MHwO99xuwyv9np3BeFmqBppbMuT/L1/j31sDDwIfA/oE+w+XAssCVWqBClko8vvtGwCPA5EAtl1+Bs7ASl9elYF5U+sD/GpaoBDohbZ3l8gqwY4DP8yPWCG1lslE/V6KiOQteVPJV0XbAC8BEYMMAn+sHrH5uU+B2LVAhS6VyolLoIt0HmAL8HWgV4PN9BxwLtATGRTQvaiZW2DjIXQv4AYudxEOBz9yLu3aAz/kl0A1Yj3RVodPuT3xkrpdyqQfZumA5LqOxGrWh8Zm7xw2BR+X+pAIdvgxcVHyZZj2wlPobgcYBPvc04ABga+B5uQcSDLk/yT2gb3P6RCxoehVhHvl+C9gN2Al4Xd+YKEUztpc0c+5PUj76GcAC4KJAx+FFYDtgX6yWbiwWiNyf+MhcPZWkA3/nuRehb6DjMRGr+n8I8GkE8ydRiY/MWSpVZfqbw7CTxj0CHZcHgfWBw4GZkbsHaSe2HbAFWROVcgbGmmK7RF8RbrmFsUALrOPiT7JUJKyicFGpRNBrTazcwrdYo/cQuRXbxcoFnvVCiWJ4GRgsS6W8lsst2Fb0wYGO183YuaJ+hFHLJe3Jb4tSMgaTgQ7ADlgGeqZEJQSaA+OB94G9Ah234ViZiAvk/og6+AGLy/0OeDqr7k9IbIx1MHwN2CXQe7wIWA4LPPskX4tRafrhruHznFU7NusTEqKPvi2W9focsE2A97cAOBk7tHiXp2vmm8sgUQmPodi28WBPa39TqXxy7IplvT5GuIcWu2PniiaUeK18cxkUqA0n72MUFhc8w4PYr4WlNbyGtQeeEJO4lFr6oBJ0xA4t3uEmMTSmAQc59+2RhF+UtFsqMXz0HsfKrvbGSm2UyuXAF24N5TjQicuTwJaxTVpMizTXquMWrIxkaHyIld5sCzxR4O/mOw+yVCq3Zt931nNH4BMP1zsO21E8q46f6YCdV3sa2FxfguQ4AfgeyyUJ0XKZCvzB+ccvexYLxVTKv4Y/w064bwr8x8P19nKiNAIr4J4PewJvA89gVRglKglxvLNcbiDMQ1tvYHkKHam/Ab1adBghlT5Y6Fyc9fBTi6e1E4Wn3DWLoT1WL/oV7LR9kKKSBpHph+3IDAzYB28DHE3tbVx/jfClS7P7c6X7UI3yJJS3uQ9Le0/31w54FniPALpdNEzxIr0Mq64faur/37A2rn1Z/JDZQhQrKYQkx2ocsFo9cY5C6O9EsHdC97sJ1u1iGhXMSq8pKmk7lr0SFsidAxwT6D3eiCXQDXALrpA5SLulks/zJWGpPIsFQru5tVMqnYDZlK8n1QZYVvo0oKtEJRmaYa06vnYLJUSucuPfu4T5k/tTGm9jOzp7YFu4PtySN4GHsP7f5WYD4D5gBmWsBJC1Rbk6ljY92S2cEBklnSj7+pzurIkt8bOj09QJySvAVgGMY0usEsAcbOtaopIAbYF/AZMIcEuuQl/prI7Bn7GeVQ97up8LsF3IToFa7COcK5ZYgbSsm887ua/Jf4DtI7x/BXSLH4Pr3Pq/xdN9HAfMAwZFMGarUl0gzXusUT65sTOWmPY0dkxdohKPFVJoHHAcVhjsVE/jt5+LWYwAVohsfNfEYo3fA6dJVJJhT6ya/j2EmfqfNfcnn5d++Tyv9Zxze7thAftSaePc50ddzCJmmmCnq6uAc32Lior+GIc79b6hgEUrKiMq9aW253o77Y4dmSiVBlgawFTnPqeNi50OFG25xFBPpZL0A+Y7cWkc6UuXVb4C9sdvF8q/OuvwxJSPXUNnucyjiMQ/uT/5i0uInRa1+7N0Ye2H1SR5zNPf6IF1UxicsbFdASvFUAVcQZ4HHhtqkRZErtPiAIlKMM/326zboe7fh3v6+7s4N2c0sGLG1/6ZWGmG02WpJMOVWCJRrwrfR9pjYPmszyrstG8zJ/o+aIkV2HoeC8iKaq4GXi1k0uSj508zLPv1ayrXaVGBdbgGq0ky19P1hmFbxPtraJdgLtZYr50slWRZ3ZnHiWYpZtT9KSfHuY9qXw3FEsx049MMK4ZWkHmp+hzFk8tS/BKrKSrK4/6Uym5UV14Ti/MxltfTAqsBE8ykZY0WWPXzN7ATr7G/dGmlFVZI+lmKr7yWVj4CumCnnMeVuii1SP2xNZbF+QrJnYiWZVncmN2K1ZrtoOFYQkwOw4LTD/j60mmR+qcddiL6RWBHz9dWYL0wTsPiUMdrKBbjNaw4exus/orM50jYAXgB2/701V5Buz/50RlLARiqoViMF4Dfuw/fE74uKlEpP+2xCmMPEmanxZAodX22c2N9P7ZzIYyXsAD1zs49T3TSZE6Xj4OwimOjseLKslSWpFh3PJe89goBN92qAE8A2zk33Nd5qCPcGpalEhA9gFnYll2hzdCUUbskV6PktZqMw/oM/QHrR+6DTlhh7buxmjISlQDpjZUhvFZDUZRonuQs7dM1bP9jrLPauuGnNStOrKdiNXg3cP/tJ4lK2JxCfBXEKklL4FP8HSJMi5i0xeoCfenRMnnfuZU1z0M1kqhk2z1IGwcB62oYABiJBf8Px09BKrDWHp84y2TjfCzKZTQP0Zv9aSafs02/aJi4Giu4/YPHax6J1Q9qWeg8SVTiFhUlK2a7zsmlWE1Zn7u2R2Inv9csVvwlKvF+oUEpAEv48xn54FyA9Qr3eUr9T1jZh5KLeC9T5GIWIhSyYq3Nw2rkXuP5up3dNb3FpWSpZMOiSTNpt9bmYsWnb/F83W7AEPyc0G5Yl6hoN0EvlJ4vDOZgtZBv83zd7lgAtoXHazaUpSLSRNo+hDOAgVhDdZ90xVrNtNCEiLrQ1nN6eBfLuVnHs6Ac6YTqvnIIytIsFW1RSlRkqZSXl7E6L897vu7RWK+esrdklfsTN9pSjpfXgf5YdUCfFJNn4nUdSlRkqcRObDtgL2GHHn1bJp2B6wmgRo9iKhKVkMnHHY/FWnsc2B6/tUzAArAfYYWoKiUoVRKVdLxMcn/i4C4ssawj9XT2K5BewOdYALZ1SOt1GZnTMv0DpsrTz1SCkdjW8CzP1+2DJa2tHOpHUMlv4Voq+bwsyqgNj2HYIb+5nq/bA4uZNA19ANT3J24WyA0MJg1iKFZc+2TPgnIEVmhpdMCCUmdG7bJ6T1PnHmTBqqsU84HzsS3cXz1fuytWJyW6AlRyf+JG7k9l+BY7MXxjAtdO4mxOWdehSh/EjT4C5bXWvsVyTEYlcO0ezoVqHvsc1FyU87RGZalIVJbgU/fSr5qAoBxJdcykeRrmoKal0khrNKoXRTGVZIX1dayWycQErn0ItpuTuqLdNS2Vj7RGg6CB55+TABfGJGBXrJufb0Hp5t6zf6RIUBbVJSpdgJ7UaA4kZKlkxFJ5FtgB2AX4j+f7PA6YjfXkaZ2yOai378+dQGPgTK3X4El7BnQ+oukjWD0e2ALYAytF4JNjsSpuI7CYTOqpa0KGOPN6kN7dYC0VHasoLQ54E7Z1eyjwTgJuzpdYun6zLM1BPip/oful67R+RWQfxtq4FmiC9V+e6fl+OmMxk7HElWtSCg2KmZBFwKnA6tipSxGXRZPm5yvEUrkZS3U/DfjR8712xbae7yd9MZOChL1QlZ+FZfy1xnqrColKDJbKEGA14ETgO89/vxfwFVaCQD2dKT7I9QlwMNZZ/nENY3TzFwv57OzUFleaj5UeaIBtOszxfG9/wgpKj6K8pRuDn6dSF+VUrPjMdliZPJGAjyrqpGaD9p+cq74iVvjZNwe7df8AFSgqHYPF7OtL9zpWJm9f4GONsdyfMpJr0D7TuTeNSWZToQcwHdt+bqNhX4xfkzSfJwIbYAl0czTWiVsqaReVfNbny1hiWQssEOubE7CktdEEUFQ6UBbLv2lQVZXouuyFnW9YWeNeEI3yjCes6hZ8Wmlewec7GquT0lzLsU6mOwtxQlKWSk3uAFYBztDYJ0LaTylX4oBrd/ei3ClBqZOZ2AnrVr8VlHKISo6hzqQforkQCbiBPjgO+AZrOSo3p3YWYsW3WwD3FOuz+uRMLF/gXs1NneTrk6Z9S7kcz9cXy10ZIcukXi7AyqXcGtqinIMV810X25YTlf1CZ5VeWCW3YSjmV5+LfY7TiotC/9J9jpVa2BB4SnMnyigmX2JJa001HHVyDhbXuqwA6zkI83kasDewM/Cu5rEg9ycLX0lfnAZ878SkhYa2XjengROTIH3WfHkB2NxZL7MyPqlyf/yJ60AsuDgUO5ksauc8Z5lcVMpFQgz0PYCdhj4R1QuRpVI8fYGf3ddWXQfq5lz3IRvswzoMebBvxiLNZ2vOa0WV35bkFOfmDAOW0xKpk4udBlzi86IxKPjlziQbqjUg96cWlsEqFFZRXYBJ1M5gJ7jnk0D8Luk0fd80xVKnj0n5pDfMc7KbuK9yWlmN+s+QdQCelE7kxRCss+KCpBdvTMwFemPR+zTnuOhAYf7sqSGolyuAFbDk0wVJ/7FYA1gzsV2ijYFntGZSSz5BQ7WTqZ1rgZWwHbCfy2lmx8yHwF5kN8cl7QcK81mf2n5fkuuorsU7L8RJi4Fcjks3LPU6Cy9TFshnHNRPupqbsHYgp+K/Fm9mF+84rMbI6ZE/h76+Rj4xI4lKtWVyEhZ31BcxAa5xL+YFWm+p59cMP/v1WMykopZJ1szsi4BlqeeodqRf6EJ+Ls2WShazrkdg2+2nUIGYiXx3+5L1wSqfj9eHPZPCkxZux46wnEDANaCzFBD8EuuZuxkwSS+UiIjhWAD2WCI4bJvFXYb3gF2AA7BapCGi4KOA6ubu/QggACtRqZ9HsaK9PYk31T3t4rMoo2t4tHPXj49JTCQq1dyJVfw/M0K3Ju3zV5WxMRjlxKSXc9ejRKJSzRBsG/raAO5FeSrZGodczKR3zGIiUamd07AIewwHFtPu/qQ9ED0a2xqOKmYiUSmOWdiBxc2wIwAiXEslRmG9C1jPuTmpaw8sUamb97DDimo8r/XpyzJpiXVB/EyTlm1yjeePpDw7RZqXdLlII7FGZb1IQcxEi9cv92A7RecEYPZr/gobq0pwO7AmtjU8OysTokVZHJdhB7lGV3hetEsUJrdiwf5jga/ls4p8mefM2bbAsxn6+oraGYPFTPqQ4d5VEpXSmQrsAbQHpni6ZqMUxROywJ3A2kAPMhAzkaiUj38DG2Fp/6UeR1/k+efSTCWFdRQWM+kJfKGpkKgk+dVaCWshmbSoiMqISi4A25sMxkwkKpVjsBOX24v43YUBv1ChUU4BHkOGA7ASlTCY5xbgusAjCYiKArrlWcO54kg9yHAAVqISFp8DfwS2Bd7ScETlyjYnkuJIEpVs8gawNXau6HsNhxeSqFF7L3Y2pycZSlqTqMTNA1hm7oW1/P+KleTv3vkUlVHY1vARpPhsjkQl3QzC6miMKfL3JT5+xiBXnb432hqWqKSAuVgAcEPguQJ/V/VUSuN2JyZBV6ePjWU0BMEwDdgdaCdLpSD3pxhhvRs4A2W/SlQywqsSlf/RyPMYjMVa4s7QMpP7I0Qp1swYYB3gcAmKLBWhj0Ip1swY4C/ATA2TFqUQ+VohS/uZO4EWWABcgiJLRXj6SqeBqgLHQAFYiYookQXAfGCFlD5fPoltDYFngKNQvCQM87KqSvlTkbMKVli5awqfrRkp6oeTFRRTiZ/vgG7A9sA7GbRUhERFJMSrwBZYG5F5Gg4hURG+uAcrDnWh1qeoBIqppJsVsTYiscZbVgZ+0DTqSyDCYR7V8ZYPIrrvKcBBEhSJigiXV4FNsKJDCwK+z7eAjlhXggmaNomKCJ87geWAiwMUkw5YVbzHNU1xo5hKdmmCVTrrUsF7mAz0BSZqOiQqIj1sg+0YbVLGvzkdOA0Yp+GX+yPSxxvApsAxJB9v+RgLHLeSoEhURPq5A4u3XJHAtd/HdnM2kJjI/RHZZBXgJiw7txTeBU4BntCQSlSEAGiLFTraqcDf+wjoDzysIZT7I8RvmQLsDBwK/JTnzx8EtJGgSFSEqIvxQGPg0lr+/8nAIShpTcj9EUXQBKvfchgWMzkV5ZkIiYrwQHPUtFxIVIQQSaOYihDCK/8PpF3zhVAkWSYAAAAASUVORK5CYII=)');
+const $=s=>document.querySelector(s);
+const fmt=(n,d=0)=>Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd=(n)=>'$'+fmt(n);
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),3200)}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- icons ---------- */
+const I={
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>',
+ desk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>',
+ scout:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7-3 13-3-13z"/></svg>',
+ ent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V4h4v17M10 21V8h4v13M16 21V12h4v9"/></svg>',
+ token:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9c3-3 5 3 8 0s5 3 8 0M4 15c3-3 5 3 8 0s5 3 8 0"/></svg>',
+ how:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M12 4v16"/></svg>',
+ sub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14"/><path d="M9 5v14M14 5v14"/></svg>',
+ arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+ ext:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.2 21H2.1l7.3-8.3L1.8 3h6.4l4.4 5.9zM16.7 19.2h1.7L7.2 4.7H5.4z"/></svg>'
+};
+
+/* ---------- routing ---------- */
+const NAV=[
+ {id:'home',label:'Home',icon:'home'},
+ {id:'desk',label:'Sourcing Desk',icon:'desk',sub:[{id:'desk',label:'New request'},{id:'mine',label:'My requests'}]},
+ {id:'jobs',label:'Scout Network',icon:'scout',sub:[{id:'jobs',label:'Open jobs'},{id:'join',label:'Become a scout'}]},
+ {id:'enterprise',label:'Enterprise',icon:'ent'},
+ {id:'token',label:'$BULK',icon:'token'},
+ {id:'how',label:'How it works',icon:'how'}
+];
+const TITLES={home:['Home'],desk:['Sourcing Desk','New request'],mine:['Sourcing Desk','My requests'],jobs:['Scout Network','Open jobs'],join:['Scout Network','Become a scout'],enterprise:['Enterprise'],token:['$BULK'],how:['How it works']};
+function parent(id){for(const n of NAV){if(n.id===id)return n.id;if(n.sub&&n.sub.some(s=>s.id===id))return n.id}return 'home'}
+function renderNav(route){
+  const p=parent(route);let h='';
+  for(const n of NAV){
+    h+=`<a href="#${n.id}" class="${(n.id===p&&!n.sub)||(n.sub&&false)?'on':''}${n.id===p&&n.sub?'':''}" ${n.id===p&&!n.sub?'aria-current="page"':''} onclick="closeSide()" title="${n.label}">${I[n.icon]}<span>${n.label}</span></a>`;
+    if(n.sub&&n.id===p){h+='<div class="sub">'+n.sub.map(s=>`<a href="#${s.id}" class="${s.id===route?'on':''}" onclick="closeSide()">${I.sub}<span>${s.label}</span></a>`).join('')+'</div>'}
+  }
+  h+=`<h6>INFORMATION</h6><a href="https://x.com/BulkLotCards" target="_blank" rel="noopener noreferrer" onclick="return openExternal(this.href)">${I.x}<span>Twitter</span><span class="ext">${I.ext}</span></a>`;
+  $('#nav').innerHTML=h;
+  if(!NAV.find(n=>n.id===p).sub){$('#nav').querySelector(`a[href="#${p}"]`).classList.add('on')}
+  const t=TITLES[route]||['Home'];
+  $('#crumbs').innerHTML='<span>BulkLot</span>'+t.map((x,i)=>`<span>/</span>${i===t.length-1?`<b>${x}</b>`:`<span>${x}</span>`}`).join('');
+}
+function openExternal(url){
+  let w=null;try{w=window.open(url,'_blank');if(w)w.opener=null}catch(e){}
+  if(w)return false;
+  linkFallback(url);return false;
+}
+function linkFallback(url){
+  let m=document.getElementById('m-link');
+  if(!m){m=document.createElement('div');m.className='scrim';m.id='m-link';m.onclick=e=>{if(e.target===m)closeModal()};document.body.appendChild(m)}
+  m.innerHTML=`<div class="modal" role="dialog" aria-modal="true"><h4>Open BulkLot on X</h4><p class="muted" style="font-size:15px">This window blocked the new tab. Copy the link or open it directly.</p><input class="input" readonly value="${url}" onclick="this.select()" style="margin:6px 0 14px"><div style="display:flex;gap:10px"><a class="btn" href="${url}" target="_blank" rel="noopener noreferrer" style="flex:1">Open X</a><button class="btn ghost" style="flex:1" onclick="copyText('${url}')">Copy link</button></div></div>`;
+  m.classList.add('on');
+}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Link copied.')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Link copied.')}catch(_){toast(t)}a.remove()}}
+function go(r){location.hash=r}
+function closeSide(){$('#side').classList.remove('open')}
+function route(){
+  const r=(location.hash.slice(1)||'home');const fn=VIEWS[r]||VIEWS.home;
+  renderNav(VIEWS[r]?r:'home');$('#view').innerHTML='<div class="wrap">'+fn()+'</div>';$('#view').scrollTop=0;
+  (AFTER[r]||(()=>{}))();
+}
+window.addEventListener('hashchange',route);
+
+/* ---------- isometric scene (drawn from the logo's language) ---------- */
+function isoScene(opts={}){
+  const {ox=260,oy=100,s=30,seedv=3,density=1}=opts;seed=seedv;
+  const P=(x,y,z)=>[ox+(x-y)*s*.866,oy+(x+y)*s*.5-z*s];
+  const pt=a=>a.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ');
+  const boxes=[];
+  const spots=[[0,0],[3,-1],[6,0],[1,3],[4,3],[8,2],[2,6],[6,5],[9,6],[11,1],[5,8],[10,9],[13,4],[8,11]];
+  spots.forEach(([x,y],i)=>{if(i>=Math.round(spots.length*density))return;const w=1.2+rnd()*1.0,d=1.2+rnd()*1.0,h=0.8+rnd()*2.6;boxes.push({x,y,w,d,h,stack:rnd()<.35,ghost:rnd()<.3})});
+  boxes.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+  let g='';
+  const st='stroke:color-mix(in srgb,var(--ink) 30%,transparent);stroke-width:1';
+  for(const b of boxes){
+    const {x,y,w,d,h}=b;
+    const top=[P(x,y,h),P(x+w,y,h),P(x+w,y+d,h),P(x,y+d,h)];
+    const right=[P(x+w,y,0),P(x+w,y+d,0),P(x+w,y+d,h),P(x+w,y,h)];
+    const left=[P(x,y+d,0),P(x+w,y+d,0),P(x+w,y+d,h),P(x,y+d,h)];
+    if(b.ghost){g+=`<g style="fill:none;${st};opacity:.55"><polygon points="${pt(top)}"/><polygon points="${pt(right)}"/><polygon points="${pt(left)}"/></g>`;continue}
+    g+=`<polygon points="${pt(left)}" style="fill:color-mix(in srgb,var(--ink) 6%,var(--hero2));${st}"/>`;
+    g+=`<polygon points="${pt(right)}" style="fill:color-mix(in srgb,var(--ink) 11%,var(--hero2));${st}"/>`;
+    g+=`<polygon points="${pt(top)}" style="fill:color-mix(in srgb,var(--ink) 17%,var(--hero2));${st}"/>`;
+    if(b.stack){const n=Math.max(2,Math.round(h/0.35));for(let k=1;k<n;k++){const z=h*k/n;g+=`<polyline points="${pt([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y,z)])}" style="fill:none;${st}"/>`}}
+    b.c=P(x+w/2,y+d/2,h);
+  }
+  // network: hub + agent (blue) and scout (amber) routes
+  const hub=P(5.5,3.5,6.5);let net='';const solid=boxes.filter(b=>b.c);
+  solid.forEach((b,i)=>{
+    const col=i%3===0?'var(--scout)':'var(--agent)';const path=`M${b.c[0].toFixed(1)},${b.c[1].toFixed(1)} L${hub[0].toFixed(1)},${hub[1].toFixed(1)}`;
+    net+=`<path d="${path}" style="stroke:color-mix(in srgb,var(--ink) 18%,transparent);stroke-width:1;fill:none" stroke-dasharray="2 5"/>`;
+    net+=`<circle cx="${b.c[0].toFixed(1)}" cy="${b.c[1].toFixed(1)}" r="4" style="fill:var(--hero2);stroke:${col};stroke-width:1.5"/>`;
+    net+=`<circle r="2.6" style="fill:${col}"><animateMotion dur="${(3+rnd()*4).toFixed(1)}s" begin="0s" repeatCount="indefinite" path="${path}"/></circle>`;
+  });
+  net+=`<circle cx="${hub[0]}" cy="${hub[1]}" r="9" style="fill:var(--hero2);stroke:var(--ink);stroke-width:1.5"/><circle cx="${hub[0]}" cy="${hub[1]}" r="3" style="fill:var(--ink)"/>`;
+  return `<svg class="scene" viewBox="0 0 640 520" preserveAspectRatio="xMaxYMid meet" aria-hidden="true"><g>${g}</g><g>${net}</g></svg>`;
+}
+function hero({kick,title,body,actions='',stats=[],seedv=3,minh}){
+  return `<section class="hero" style="${minh?'min-height:'+minh+'px':''}">${isoScene({seedv})}<div class="copy"><div class="kick">${kick}</div><h1>${title}</h1>${body?`<p>${body}</p>`:''}${actions?`<div style="display:flex;gap:12px;flex-wrap:wrap">${actions}</div>`:''}</div>${stats.length?`<div class="stats">${stats.map(s=>`<div><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]||''}</div></div>`).join('')}</div>`:''}</section>`;
+}
+
+/* ---------- illustrative data ---------- */
+seed=42;
+const METROS=['Phoenix, AZ','Columbus, OH','Dallas, TX','Tampa, FL','Seattle, WA','Charlotte, NC','Denver, CO','Atlanta, GA','Chicago, IL','San Jose, CA','Nashville, TN','Las Vegas, NV','Sacramento, CA','Minneapolis, MN','Richmond, VA','Pittsburgh, PA'];
+const HANDLES=['mesa.cards','buckeye.binders','lonestar.lots','gulfcoast.tcg','rainier.scout','queencity.pulls','milehigh.holos','peach.slabs','windy.bulk','valley.vintage','music.row.tcg','strip.finds','capitol.cards','northstar.lots','fall.line.tcg','three.rivers'];
+const SCOUTS=HANDLES.map((h,i)=>({h,m:METROS[i],visits:Math.round(40+rnd()*120),lots:Math.round(12+rnd()*60),acc:(95+rnd()*4.9),earn:Math.round(3000+rnd()*18000),life:Math.round(20000+rnd()*140000),mv:Math.round(rnd()*14)-5})).sort((a,b)=>b.earn-a.earn);
+const LOTS=[['2,400 bulk commons/uncommons','scout',2400,310,-18],['Booster box, Evolving Skies','agent',1,712,-9],['PSA 10 modern lot, 8 slabs','agent',8,2860,-12],['Binder collection, 1999–2002','scout',640,1450,-27],['Shop backstock, sorted bulk','scout',12000,1380,-22],['Elite Trainer Boxes x6','agent',6,318,-7],['Japanese booster boxes x4','agent',4,520,-11],['Estate lot, 4 long boxes','scout',5100,690,-31]];
+
+/* ---------- views ---------- */
+const VIEWS={};const AFTER={};
+VIEWS.home=()=>`
+${hero({kick:'Pokémon inventory sourcing network',title:'The network<br>is sourcing.',body:'Tell your agent what you need, your budget and your deadline. It searches online marketplaces and sends local scouts into card shops and shows for inventory that never gets listed.',
+ actions:`<button class="btn" onclick="go('desk')">Brief an agent</button><button class="btn ghost" onclick="go('enterprise')">Enterprise sourcing</button>`,
+ stats:[['OPEN REQUESTS','37','across 3 channels'],['ACTIVE SCOUTS','24','in 9 metros'],['SOURCED, LAST 30 DAYS','$3,789','9 completed lots']]})}
+<div class="notice"><span>Business sourcing plans are open for vault, marketplace and tokenized-card platforms.</span><a onclick="go('enterprise')">Talk to procurement ${I.ext}</a></div>
+<div class="statrow s3">
+ <div><div class="k">Cards sourced</div><div class="v">1,267</div><div class="s">last 30 days, online and local</div></div>
+ <div><div class="k">Median discount</div><div class="v">14.2%</div><div class="s">below trailing 30-day comps</div></div>
+ <div><div class="k">Evidence match rate</div><div class="v">98.6%</div><div class="s">lots matched scout inspection</div></div>
+</div>
+<div class="grid g2">
+ <div class="card flex"><div class="lab">ACCOUNT</div><h3>${W.pk?'Wallet connected.':'Connect your wallet.'}</h3><p>${W.pk?'You can authorize scouts and approve purchases on your requests.':'Your Solana wallet is your account. It authorizes scouts and approves every purchase.'}</p><div class="foot"><span class="muted" style="font-size:14.5px">${W.pk?short(W.pk):'Phantom, Solflare or Backpack'}</span><button class="btn sm" onclick="walletClick()">${W.pk?'Manage wallet':'Connect'} ${I.arrow}</button></div></div>
+ <div class="card flex"><div class="lab">SOURCING DESK</div><h3>Brief an agent.</h3><p>One request reaches marketplaces and physical venues. You see a shortlist with evidence before anything is bought.</p><div class="foot"><span class="muted" style="font-size:14.5px">Median time to shortlist: 6 min</span><button class="btn sm ghost" onclick="go('desk')">Start ${I.arrow}</button></div></div>
+</div>
+<div class="section-h">NETWORK ACTIVITY</div>
+<div class="grid">
+ <div class="card"><div class="lab"><div class="tabs" id="flowTabs"><button class="on" data-k="online">Online</button><button data-k="local">Local</button><button data-k="settled">Settled</button></div><span class="chip agent" id="flowChip"><i></i>Agents searching</span></div><div id="flowBody"></div></div>
+</div>
+<div class="section-h">RECENT LOTS</div>
+<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>Lot</th><th>Channel</th><th class="num">Cards</th><th class="num">Paid</th><th class="num">vs. comps</th><th>Status</th></tr></thead><tbody>
+${LOTS.map((l,i)=>`<tr><td>${l[0]}</td><td><span class="chip ${l[1]}"><i></i>${l[1]==='agent'?'Online agent':'Local scout'}</span></td><td class="num">${fmt(l[2])}</td><td class="num">${usd(l[3])}</td><td class="num up">${l[4]}%</td><td class="muted">${i<2?'In transit':'Settled'}</td></tr>`).join('')}
+</tbody></table></div>`;
+AFTER.home=()=>{
+  const data={online:[['Searching marketplaces',21,'var(--agent)'],['Comparing & scoring',14,'var(--agent)'],['Shortlist awaiting buyer',6,'var(--ink)']],local:[['Scouts dispatched',9,'var(--scout)'],['Inspecting on site',4,'var(--scout)'],['Evidence awaiting approval',2,'var(--ink)']],settled:[['Approved this epoch',31,'var(--ok)'],['Paid from escrow',29,'var(--ok)'],['Disputed',1,'var(--bad)']]};
+  const chip={online:['agent','Agents searching'],local:['scout','Scouts in the field'],settled:['ok','Settled']};
+  const draw=k=>{const rows=data[k];const max=Math.max(...rows.map(r=>r[1]));$('#flowBody').innerHTML=rows.map(r=>`<div style="padding:12px 0"><div style="display:flex;justify-content:space-between"><span>${r[0]}</span><b style="font-weight:500;font-size:22px">${fmt(r[1])}</b></div><div class="bar" style="margin:10px 0 0"><i style="left:0;width:${r[1]/max*100}%;background:${r[2]}"></i></div></div>`).join('')+`<div class="muted" style="font-size:14.5px;margin-top:10px">Requests move left to right. Nothing is bought until the buyer approves.</div>`;const c=$('#flowChip');c.className='chip '+chip[k][0];c.innerHTML='<i></i>'+chip[k][1];};
+  $('#flowTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#flowTabs').children].forEach(x=>x.classList.toggle('on',x===b));draw(b.dataset.k)};draw('online');
+};
+
+/* ---- sourcing desk ---- */
+const CATS={bulk:'Bulk collection',sealed:'Sealed product',singles:'Raw singles',graded:'Graded slabs',vintage:'Vintage (WOTC era)'};
+const ITEMS={bulk:['~8,000 bulk commons/uncommons, mixed eras','Binder collection, 600+ cards incl. holos','Storage-unit find: 4 long boxes, unsorted','Estate lot: childhood collection, 1999–2003','Shop backstock: 12,000 sorted bulk','Reverse holo lot, 1,100 cards'],
+ sealed:['Booster box, Evolving Skies','Case of 6 Elite Trainer Boxes, Paldean Fates','Mixed sealed lot: 14 booster bundles','Japanese booster boxes x4, VSTAR Universe','Distributor overstock: 2 cases of 151 bundles','Booster boxes x3, Lost Origin'],
+ singles:['Alt-art lot, 22 cards, near mint','Trainer gallery set, complete','Modern chase singles, 40 cards, raw','Player binder: meta staples x180','Full-art supporter lot, 35 cards','Illustration rare lot, 28 cards'],
+ graded:['PSA 10 lot, 12 modern slabs','CGC 9.5 vintage holos x6','BGS 9 Base Set Charizard','PSA 9 Neo-era holos x8','Mixed grader lot, 30 slabs','PSA 10 Japanese promos x10'],
+ vintage:['Base Set unlimited, 102 cards incl. holos','1st Edition Jungle commons lot','Neo Genesis binder, partial set','WOTC-era bulk, 2,500 cards','Shadowless holo, raw, lightly played','Fossil + Team Rocket holo lot x14']};
+const ONLINE=['eBay','Facebook Marketplace','Mercari','TCGplayer','Whatnot','OfferUp'];
+const VENUES=['Local card shop','Regional card show','Estate sale','Flea-market vendor','Private collector'];
+const desk={stage:'idle',form:{q:'',cat:'bulk',budget:15000,deadline:'',metro:'',online:true,local:true},steps:[],log:[],list:[],scouts:[],reqs:[],id:null};
+const STEPS=[['Read the brief','Parse quantity, condition, budget cap and deadline'],['Search marketplaces','Query listings and recent sold comps'],['Score and compare','Price vs. comps, seller history, condition signals'],['Build shortlist','Rank candidates inside your budget'],['Dispatch scouts','Needs your authorization'],['Collect inspection evidence','Photos, counts and condition checks on site'],['Buyer approval','You approve each lot before it is bought']];
+VIEWS.desk=()=>{
+  const f=desk.form;
+  return `
+<div class="grid g12" style="margin-top:0">
+ <div class="card"><div class="lab">NEW SOURCING REQUEST</div><h3>What do you need?</h3><p>Write it the way you would brief a buyer. The agent turns it into searches and scout jobs.</p>
+  <form id="reqForm" onsubmit="return startRequest(event)">
+   <div class="field"><label for="q">Brief</label><textarea id="q" class="input" required placeholder="e.g. Large bulk collections, mostly 2016–2023, near mint, for repacking. Prefer sellers who can do repeat volume.">${esc(f.q)}</textarea></div>
+   <div class="row2"><div class="field"><label for="cat">Category</label><select id="cat" class="input">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===f.cat?'selected':''}>${v}</option>`).join('')}</select></div>
+   <div class="field"><label for="budget">Budget cap (USD)</label><input id="budget" class="input" type="number" min="100" step="100" value="${f.budget}" required></div></div>
+   <div class="row2"><div class="field"><label for="deadline">Deadline</label><input id="deadline" class="input" type="date" value="${f.deadline||defDate()}" required></div>
+   <div class="field"><label for="metro">Scout area</label><input id="metro" class="input" placeholder="City or ZIP" value="${esc(f.metro)}"></div></div>
+   <div class="field"><label>Channels</label>
+    <label class="check"><input type="checkbox" id="chOnline" ${f.online?'checked':''}><span>Online marketplaces<small>eBay, Facebook Marketplace, Mercari, TCGplayer, Whatnot</small></span></label>
+    <label class="check"><input type="checkbox" id="chLocal" ${f.local?'checked':''}><span>Local scouts<small>Card shops, shows and private sellers that never list online</small></span></label></div>
+   <button class="btn" style="width:100%" ${desk.stage==='running'?'disabled':''}>${desk.stage==='running'?'Agent is working…':'Brief my agent'}</button>
+  </form>
+ </div>
+ <div class="card" id="pipe">${pipeHTML()}</div>
+</div>
+<div id="shortlist">${listHTML()}</div>
+<div id="scoutzone">${scoutHTML()}</div>`;
+};
+function defDate(){const d=new Date(Date.now()+12*864e5);return d.toISOString().slice(0,10)}
+function pipeHTML(){
+  if(desk.stage==='idle')return `<div class="lab">AGENT</div><h3>Your agent is ready.</h3><p>Submit a brief and it works through these stages. You stay in control at stage 5 and stage 7.</p><ol class="steps">${STEPS.map((s,i)=>`<li><span class="n">${i+1}</span><div><b>${s[0]}</b><small>${s[1]}</small></div></li>`).join('')}</ol>`;
+  return `<div class="lab">AGENT ${desk.id}<span class="chip ${desk.stage==='done'?'ok':desk.stage==='await'?'scout':'agent'}"><i></i>${{running:'Working',await:'Awaiting your authorization',field:'Scouts in the field',review:'Awaiting approval',done:'Complete'}[desk.stage]}</span></div>
+  <ol class="steps">${STEPS.map((s,i)=>{const st=desk.steps[i]||'';return `<li class="${st}"><span class="n">${st==='done'?'✓':i+1}</span><div><b>${s[0]}</b><small>${st==='wait'&&i===4?'Waiting for you to authorize below':s[1]}</small></div></li>`}).join('')}</ol>
+  <div class="log" id="log" aria-live="polite">${desk.log.map(l=>`<div><span class="t">${l[0]}</span><span class="${l[2]||''}">${l[1]}</span></div>`).join('')}</div>`;
+}
+function listHTML(){
+  if(!desk.list.length)return '';
+  const sel=desk.list.filter(x=>x.sel);const tot=sel.reduce((a,b)=>a+b.ask,0);
+  return `<div class="section-h">SHORTLIST</div>
+  <div class="tablewrap" style="margin-top:18px"><table><thead><tr><th></th><th>Source</th><th>Lot</th><th class="num">Ask</th><th class="num">Fair value</th><th class="num">vs. comps</th><th class="num">Confidence</th></tr></thead><tbody>
+  ${desk.list.map((x,i)=>`<tr><td><input type="checkbox" aria-label="Select lot" ${x.sel?'checked':''} ${desk.stage==='running'||desk.stage==='done'?'disabled':''} onchange="desk.list[${i}].sel=this.checked;refreshDesk()"></td><td><span class="src"><i style="background:var(--${x.ch})"></i>${x.src}</span><div class="muted" style="font-size:13.5px">${x.ch==='scout'?'Unlisted lead, '+x.dist+' mi':'Seller rating '+x.rating+'%'}</div></td><td>${x.name}</td><td class="num">${x.ch==='scout'?'~':''}${usd(x.ask)}</td><td class="num">${usd(x.fv)}</td><td class="num ${x.delta<=0?'up':'down'}">${x.delta>0?'+':''}${x.delta}%</td><td class="num">${x.conf}%</td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="notice" style="align-items:center"><span>${sel.length} lots selected, <b style="font-weight:500">${usd(tot)}</b> of your ${usd(desk.form.budget)} cap. Online lots are verified from listing data; local leads need a scout visit.</span>
+  ${desk.stage==='await'?`<button class="btn sm" onclick="authorize()">${W.pk?'Sign scout authorization':'Connect wallet to authorize'}</button>`:''}
+  ${(desk.stage==='review'||desk.stage==='field')&&!desk.onlineOk&&sel.some(x=>x.ch==='agent')?`<button class="btn sm" onclick="approveOnline()">${W.pk?'Sign approval for online lots':'Connect wallet to approve'}</button>`:''}
+  ${desk.onlineOk?'<span class="chip ok"><i></i>Online lots approved</span>':''}</div>`;
+}
+function scoutHTML(){
+  if(!desk.scouts.length)return '';
+  return `<div class="section-h">INSPECTION EVIDENCE</div><div class="grid g3">${desk.scouts.map((s,i)=>{const lot=desk.list[s.lot];return `<div class="card flex"><div class="lab"><span>${s.venue}</span><span class="chip ${s.status==='approved'?'ok':'scout'}"><i></i>${{enroute:'En route',inspect:'Inspecting',ready:'Evidence ready',approved:'Approved'}[s.status]}</span></div>
+   <h3 style="font-size:21px">${lot.name}</h3><p style="font-size:15px;margin:0">Scout <b style="font-weight:500">@${s.h}</b>, ${lot.dist} mi from ${esc(desk.form.metro)}</p>
+   ${s.status==='ready'||s.status==='approved'?`<div class="evidence">${[0,1,2].map(k=>`<div>${cardSVG(i*3+k)}</div>`).join('')}</div><ul class="ticks"><li>Count verified: ${s.count}</li><li>Seller ID checked</li><li>Condition: ${s.cond}</li><li>Ask confirmed: ${usd(s.price)}</li></ul>`:`<div class="empty" style="margin:14px 0">${s.status==='enroute'?'Scout heading to venue.':'Scout is photographing and counting.'}</div>`}
+   <div class="foot">${s.status==='ready'?`<button class="btn sm" onclick="approve(${i})">Approve purchase</button><button class="btn sm ghost" onclick="pass(${i})">Pass</button>`:s.status==='approved'?`<span class="muted" style="font-size:14.5px">Approved. Funds release from escrow at pickup.</span>`:'<span></span>'}</div></div>`}).join('')}</div>`;
+}
+function cardSVG(k){seed=k*97+11;const hue=Math.floor(rnd()*360);const r=()=>Math.round(rnd()*60);
+  return `<svg viewBox="0 0 60 84" width="70%" aria-label="Inspection photo"><rect x="2" y="2" width="56" height="80" rx="4" style="fill:var(--panel2);stroke:var(--line2)"/><rect x="7" y="12" width="46" height="32" rx="2" fill="hsl(${hue} 30% 45% / .55)"/><rect x="7" y="6" width="${20+r()/3}" height="3" rx="1.5" style="fill:var(--mute)"/><rect x="7" y="50" width="46" height="2" style="fill:var(--line2)"/><rect x="7" y="56" width="${24+r()/3}" height="2" style="fill:var(--line2)"/><rect x="7" y="62" width="${18+r()/3}" height="2" style="fill:var(--line2)"/></svg>`}
+function refreshDesk(){if(parent(location.hash.slice(1))!=='desk'||location.hash.slice(1)!=='desk')return;const p=$('#pipe');if(!p)return;p.innerHTML=pipeHTML();$('#shortlist').innerHTML=listHTML();$('#scoutzone').innerHTML=scoutHTML();const l=$('#log');if(l)l.scrollTop=l.scrollHeight;const b=$('#reqForm button');if(b){b.disabled=desk.stage==='running';b.textContent=desk.stage==='running'?'Agent is working…':'Brief my agent'}}
+const now=()=>new Date().toTimeString().slice(0,8);
+function addLog(t,c){desk.log.push([now(),t,c]);refreshDesk()}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function startRequest(e){
+  e.preventDefault();
+  const f=desk.form;f.q=$('#q').value.trim();f.cat=$('#cat').value;f.budget=Math.max(100,+$('#budget').value||0);f.deadline=$('#deadline').value;f.metro=$('#metro').value.trim()||'your area';f.online=$('#chOnline').checked;f.local=$('#chLocal').checked;
+  if(!f.online&&!f.local){toast('Choose at least one channel: online marketplaces or local scouts.');return false}
+  desk.id='REQ-'+(4800+Math.floor(Math.random()*900));desk.stage='running';desk.steps=[];desk.log=[];desk.list=[];desk.scouts=[];desk.onlineOk=false;
+  desk.reqs.unshift({id:desk.id,q:f.q,cat:CATS[f.cat],budget:f.budget,deadline:f.deadline,status:'Searching'});
+  refreshDesk();
+  seed=Math.floor(Math.random()*1e6)+1;
+  const B=f.budget;
+  desk.steps[0]='run';addLog(`Brief received for ${CATS[f.cat].toLowerCase()}, cap ${usd(B)}, due ${f.deadline}.`,'a');await wait(900);
+  desk.steps[0]='done';
+  if(f.online){desk.steps[1]='run';refreshDesk();for(const m of ONLINE.slice(0,5)){addLog(`Searching ${m}: ${Math.floor(20+rnd()*180)} candidate listings`,'a');await wait(520)}addLog(`Pulled ${Math.floor(300+rnd()*900)} sold comps from the last 30 days.`,'a');await wait(500)}
+  else addLog('Online marketplaces skipped by request.');
+  desk.steps[1]='done';desk.steps[2]='run';refreshDesk();
+  addLog('Scoring on price vs. comps, seller history and photo condition signals.','a');await wait(1100);
+  const items=[...ITEMS[f.cat]].sort(()=>rnd()-.5);const list=[];
+  items.forEach((name,i)=>{const local=f.local&&(!f.online||i%3===2);if(!local&&!f.online)return;const fv=Math.round(B*(0.07+rnd()*0.26)/10)*10;const ask=Math.round(fv*(local?0.62+rnd()*0.25:0.78+rnd()*0.3)/5)*5;
+    list.push({name,ch:local?'scout':'agent',src:local?pick(VENUES):pick(ONLINE),fv,ask,delta:Math.round((ask/fv-1)*100),conf:local?Math.round(55+rnd()*20):Math.round(80+rnd()*17),rating:(97+rnd()*2.9).toFixed(1),dist:(2+rnd()*24).toFixed(1)})});
+  list.sort((a,b)=>a.delta-b.delta);let run=0;list.forEach(x=>{x.sel=x.delta<5&&run+x.ask<=B;if(x.sel)run+=x.ask});
+  desk.steps[2]='done';desk.steps[3]='run';refreshDesk();await wait(700);
+  desk.list=list;desk.steps[3]='done';addLog(`Shortlist ready: ${list.length} lots, ${list.filter(x=>x.sel).length} pre-selected inside budget.`,'a');
+  if(list.some(x=>x.ch==='scout')){desk.steps[4]='wait';desk.stage='await';addLog(`${list.filter(x=>x.ch==='scout').length} unlisted leads near ${f.metro} need a scout visit. Waiting for your authorization.`,'s')}
+  else{desk.steps[4]='done';desk.steps[5]='done';desk.steps[6]='wait';desk.stage='review';addLog('No local leads. Review the shortlist and approve lots with the sellers.','a')}
+  desk.reqs[0].status=desk.stage==='await'?'Awaiting authorization':'Shortlist ready';
+  refreshDesk();return false;
+}
+function authorize(){requireWallet(async()=>{
+  const leads=desk.list.map((x,i)=>[x,i]).filter(([x])=>x.ch==='scout'&&x.sel);
+  if(!leads.length){toast('Select at least one local lead to send a scout.');return}
+  const cap=leads.reduce((a,[x])=>a+x.ask,0);
+  const msg=`BulkLot scout authorization\nRequest: ${desk.id}\nScouts: ${leads.length}\nPurchase cap: ${usd(cap)} (released only after your approval)\nExpires: ${desk.form.deadline}\nWallet: ${W.pk}\nNonce: ${Math.random().toString(36).slice(2,10)}`;
+  const ok=await signText(msg);if(!ok)return;
+  desk.steps[4]='done';desk.steps[5]='run';desk.stage='field';desk.reqs[0].status='Scouts in the field';
+  seed=Date.now()%1e6+3;
+  desk.scouts=leads.map(([x,i])=>({lot:i,venue:x.src,h:pick(HANDLES),status:'enroute',count:x.name.match(/[\d,]+/)?x.name.match(/[\d,]+/)[0]+' cards':'matches listing',cond:pick(['NM / LP mix','Mostly NM','LP, light edge wear','NM, centering checked']),price:Math.round(x.ask*(0.95+rnd()*0.08)/5)*5}));
+  addLog(`Authorization signed by ${short(W.pk)}. ${leads.length} scouts dispatched.`,'s');
+  for(const s of desk.scouts){await wait(1200);s.status='inspect';addLog(`@${s.h} arrived at ${s.venue.toLowerCase()}.`,'s')}
+  for(const s of desk.scouts){await wait(1500);s.status='ready';addLog(`@${s.h} uploaded inspection evidence.`,'s')}
+  desk.steps[5]='done';desk.steps[6]='wait';desk.stage='review';desk.reqs[0].status='Awaiting approval';refreshDesk();
+})}
+function approve(i){requireWallet(()=>{desk.scouts[i].status='approved';addLog(`Lot approved by ${short(W.pk)}: ${desk.list[desk.scouts[i].lot].name}`,'s');checkDone()})}
+function pass(i){desk.list[desk.scouts[i].lot].sel=false;desk.scouts.splice(i,1);addLog('Lot passed. Scout paid visit fee only.');checkDone()}
+async function approveOnline(){requireWallet(async()=>{const lots=desk.list.filter(x=>x.sel&&x.ch==='agent');const tot=lots.reduce((a,b)=>a+b.ask,0);
+  const ok=await signText(`BulkLot purchase approval\nRequest: ${desk.id}\nOnline lots: ${lots.length}\nTotal: ${usd(tot)}\nWallet: ${W.pk}\nNonce: ${Math.random().toString(36).slice(2,10)}`);if(!ok)return;
+  desk.onlineOk=true;addLog(`${lots.length} online lots approved by ${short(W.pk)} for ${usd(tot)}. Agent is placing offers with sellers.`,'a');checkDone()})}
+function checkDone(){const needOnline=desk.list.some(x=>x.sel&&x.ch==='agent');if(desk.stage!=='await'&&desk.stage!=='field'&&desk.scouts.every(s=>s.status==='approved')&&(!needOnline||desk.onlineOk)){desk.steps[6]='done';desk.stage='done';desk.reqs[0].status='Approved';addLog('All lots decided. Scouts are cleared for pickup; payment releases from escrow on confirmation.','a')}refreshDesk()}
+
+VIEWS.mine=()=>`<div class="card"><div class="lab">MY REQUESTS<button class="btn sm" onclick="go('desk')">New request</button></div>
+ ${desk.reqs.length?`<div class="tablewrap" style="border:0"><table><thead><tr><th>Request</th><th>Brief</th><th>Category</th><th class="num">Cap</th><th>Due</th><th>Status</th></tr></thead><tbody>${desk.reqs.map(r=>`<tr><td><a href="#desk">${r.id}</a></td><td style="max-width:420px">${esc(r.q).slice(0,90)}</td><td>${r.cat}</td><td class="num">${usd(r.budget)}</td><td>${r.deadline}</td><td><span class="chip ${r.status==='Approved'?'ok':r.status.includes('Scout')||r.status.includes('authorization')?'scout':'agent'}"><i></i>${r.status}</span></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">No requests yet. Brief an agent to start one.<br><br><button class="btn sm" onclick="go('desk')">Brief an agent</button></div>`}</div>`;
+
+/* ---- scouts ---- */
+function avc(h){let x=0;for(const c of h)x=(x*31+c.charCodeAt(0))%360;return `hsl(${x} 22% 34%)`}
+
+seed=77;
+const JOBS=Array.from({length:9},(_,i)=>({id:'JOB-'+(2100+i*7),venue:pick(VENUES),metro:pick(METROS),window:pick(['Mon, Oct 12, 2–6 pm','Tue, Oct 13, morning','Wed, Oct 14, all day','Thu, Oct 15, 4–8 pm','Fri, Oct 16, evening','Sat, Oct 17, card show','Sun, Oct 18, noon–4 pm']),fee:Math.round(35+rnd()*90),bonus:Math.round(60+rnd()*340),task:pick(['Photo set + count','Inspect & hold','Inspect, buy & ship','Grade check on 12 slabs','Count bulk, photo binder pages']),claimed:false}));
+VIEWS.jobs=()=>`<div class="card" style="padding:0"><div style="padding:24px 26px"><div class="lab" style="margin-bottom:8px">OPEN JOBS</div><h3>Visits buyers have authorized.</h3><p style="margin:0">Each job pays a visit fee once evidence is uploaded, plus a success bonus if the buyer approves the lot.</p></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Job</th><th>Venue</th><th>Metro</th><th>Window</th><th>Task</th><th class="num">Visit fee</th><th class="num">Bonus</th><th></th></tr></thead><tbody>
+${JOBS.map((j,i)=>`<tr><td>${j.id}</td><td>${j.venue}</td><td class="muted">${j.metro}</td><td>${j.window}</td><td>${j.task}</td><td class="num">${usd(j.fee)}</td><td class="num">${usd(j.bonus)}</td><td class="num">${j.claimed?'<span class="chip ok"><i></i>Claimed</span>':`<button class="btn sm ghost" onclick="claimJob(${i})">Claim</button>`}</td></tr>`).join('')}
+</tbody></table></div></div>`;
+function claimJob(i){requireWallet(()=>{JOBS[i].claimed=true;toast(`${JOBS[i].id} claimed by ${short(W.pk)}.`);if(location.hash==='#jobs')route()})}
+VIEWS.join=()=>`${hero({kick:'Become a scout',title:'Get paid to<br>walk the floor.',body:'You already know the shops, the shows and the people with closets full of binders. BulkLot sends you paid visits with a clear brief and a buyer waiting.',actions:`<button class="btn" onclick="requireWallet(()=>toast('Application started for '+short(W.pk)+'. Next: identity check.'))">Apply with your wallet</button><button class="btn ghost" onclick="go('jobs')">See open jobs</button>`,seedv:21,minh:420})}
+<div class="grid g2"><div class="card"><div class="lab">HOW SCOUTING WORKS</div><ol class="steps">
+ <li><span class="n">1</span><div><b>Connect a Solana wallet</b><small>Payouts and your reputation live here.</small></div></li>
+ <li><span class="n">2</span><div><b>Verify your identity</b><small>A one-time check so buyers and sellers know who is at the table.</small></div></li>
+ <li><span class="n">3</span><div><b>Pass inspection training</b><small>Counting, condition grading basics, photo standards and counterfeit tells.</small></div></li>
+ <li><span class="n">4</span><div><b>Post a refundable bond</b><small>A $BULK bond that can be slashed for misreported evidence.</small></div></li>
+ <li><span class="n">5</span><div><b>Claim jobs near you</b><small>Visit fee on upload, success bonus on approval.</small></div></li></ol></div>
+<div class="card"><div class="lab">WHAT SCOUTS EARN</div><div class="rows"><div><span>Median visit fee</span><span class="r"><b>$58</b><small>paid when evidence is accepted</small></span></div><div><span>Median success bonus</span><span class="r"><b>$185</b><small>paid when the buyer approves</small></span></div><div><span>Top-decile monthly</span><span class="r"><b>$6,900</b><small>last 90 days</small></span></div><div><span>Payout</span><span class="r"><b>USDC on Solana</b><small>weekly, to your connected wallet</small></span></div></div></div></div>`;
+
+/* ---- enterprise ---- */
+VIEWS.enterprise=()=>`${hero({kick:'BulkLot for business',title:'Inventory you<br>can plan on.',body:'Customer demand means little without product to fill it. BulkLot gives procurement teams one place to run online searches, local scouts, seller relationships and recurring replenishment.',actions:`<button class="btn" onclick="document.getElementById('entForm').scrollIntoView({behavior:'smooth'})">Request a procurement call</button>`,seedv:13,minh:440})}
+<div class="grid g3">
+ <div class="card"><div class="lab">VAULTS AND TOKENIZED CARDS</div><h3 style="font-size:22px">Keep the vault full.</h3><p style="font-size:15.5px">Built for inventory-heavy platforms such as Collector Crypt and Phygitals, where growth is capped by how much suitable product can be sourced at the right price.</p></div>
+ <div class="card"><div class="lab">NEW ENTRANTS</div><h3 style="font-size:22px">Launch with stock on day one.</h3><p style="font-size:15.5px">For companies entering collectibles, including exchanges, that need a sourcing operation without building a buying team in every city.</p></div>
+ <div class="card"><div class="lab">SHOPS AND RESELLERS</div><h3 style="font-size:22px">Restock without the road trips.</h3><p style="font-size:15.5px">Independent shops and resellers get the same agents and scouts to buy collections, find specific cards and restock bulk.</p></div>
+</div>
+<div class="section-h">PROCUREMENT CONTROLS</div>
+<div class="grid g2">
+ <div class="card"><div class="rows">
+  <div><span><b style="font-weight:500">Recurring replenishment</b><br><span class="muted" style="font-size:15px">Standing orders by category, condition and price band. The agent re-runs on your schedule.</span></span></div>
+  <div><span><b style="font-weight:500">Seller relationships</b><br><span class="muted" style="font-size:15px">Repeat sellers, shops and show vendors tracked with history, terms and response times.</span></span></div>
+  <div><span><b style="font-weight:500">Approval policies</b><br><span class="muted" style="font-size:15px">Spend thresholds, multi-signer approval and per-category caps, enforced by wallet signature.</span></span></div>
+  <div><span><b style="font-weight:500">Evidence on every lot</b><br><span class="muted" style="font-size:15px">Photos, counts and condition checks attached to the purchase record for audit.</span></span></div>
+  <div><span><b style="font-weight:500">Reporting and export</b><br><span class="muted" style="font-size:15px">Cost basis, discount to comps and fill rate by channel, exportable to your ERP.</span></span></div>
+ </div></div>
+ <div class="card"><div class="lab">SAMPLE PROGRAM, 90 DAYS</div><div class="big">87%</div><div class="muted" style="margin-top:6px">fill rate on a 40,000-card monthly bulk target</div>
+  <div class="bar"><i style="left:0;width:58%;background:var(--agent)"></i><i style="left:58%;width:29%;background:var(--scout)"></i></div>
+  <div class="legend"><span><i style="background:var(--agent)"></i>Online agent, 58%</span><span><i style="background:var(--scout)"></i>Local scouts, 29%</span><span><i style="background:var(--panel2);border:1px solid var(--line2)"></i>Unfilled, 13%</span></div>
+  <div class="rows" style="margin-top:18px"><div><span>Average discount to comps</span><span class="r"><b>16.8%</b></span></div><div><span>Median days to fill</span><span class="r"><b>4.2</b></span></div><div><span>Disputed lots</span><span class="r"><b>0.6%</b></span></div></div>
+  <p class="muted" style="font-size:13.5px;margin:14px 0 0">Results depend on category, region and price band.</p></div>
+</div>
+<div class="section-h">PLANS</div>
+<div class="grid g3">
+ ${[['Collector','$19','/ month',['Personal sourcing agent','Online marketplaces + local scouts','4% fee on completed sourcing'],'ghost'],['Shop','$149','/ month',['Up to 10 open requests','Recurring restock orders','2.5% fee on completed sourcing','Seller relationship book'],'ghost'],['Enterprise','Custom','',['Unlimited requests and replenishment','Dedicated scout pools by metro','Approval policies and multi-signer','API and ERP export','Negotiated sourcing fees'],'']].map(p=>`<div class="card price flex"><div class="lab">${p[0].toUpperCase()}</div><div><span class="amt">${p[1]}</span> <span class="muted">${p[2]}</span></div><ul>${p[3].map(x=>`<li>${x}</li>`).join('')}</ul><div class="foot"><button class="btn sm ${p[4]}" style="width:100%" onclick="${p[0]==='Enterprise'?"document.getElementById('entForm').scrollIntoView({behavior:'smooth'})":"go('desk')"}">${p[0]==='Enterprise'?'Talk to procurement':'Start with '+p[0]}</button></div></div>`).join('')}
+</div>
+<p class="muted" style="font-size:13.5px">Revenue from subscriptions, business plans and completed sourcing fees funds $BULK buybacks.</p>
+<div class="card" id="entForm" style="margin-top:18px"><div class="lab">PROCUREMENT CALL</div><h3>Tell us what you need to stock.</h3>
+<form onsubmit="event.preventDefault();this.reset();toast('Request received. A procurement lead will reply within one business day.')">
+ <div class="row2"><div class="field"><label for="co">Company</label><input id="co" class="input" required></div><div class="field"><label for="em">Work email</label><input id="em" class="input" type="email" required></div></div>
+ <div class="row2"><div class="field"><label for="vol">Monthly volume</label><select id="vol" class="input"><option>Under $50k</option><option>$50k–$250k</option><option>$250k–$1M</option><option>Over $1M</option></select></div><div class="field"><label for="cats">Main categories</label><input id="cats" class="input" placeholder="Bulk, sealed, graded…"></div></div>
+ <button class="btn">Request a call</button></form></div>`;
+
+/* ---- token ---- */
+VIEWS.token=()=>`${hero({kick:'$BULK on Solana',title:'Sourcing revenue<br>buys $BULK.',body:'Subscriptions, business plans and completed sourcing fees become net revenue. Half of it buys $BULK on the open market every epoch.',actions:`<button class="btn ghost" onclick="go('how')">How it works</button>`,seedv:5})}
+<div class="section-h">THE FLYWHEEL</div>
+<div class="grid g4">${[['More sourcing customers','Collectors, shops and platforms send requests.'],['More completed lots','Fees are earned only when a lot is bought.'],['More net revenue','Subscriptions + plans + sourcing fees, minus scout pay and costs.'],['More $BULK buybacks','50% of net revenue buys $BULK each epoch.']].map((x,i)=>`<div class="card"><div class="steps"><span class="n" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;margin-bottom:18px">${i+1}</span></div><h3 style="font-size:21px">${x[0]}</h3><p style="font-size:15.5px;margin:0">${x[1]}</p></div>`).join('')}</div>
+<p class="muted" style="font-size:13.5px;margin:18px 0 0">Buybacks depend on net revenue and are not guaranteed. Not investment advice.</p>`;
+
+/* ---- how ---- */
+VIEWS.how=()=>`<div class="grid g12" style="margin-top:0;align-items:start"><div class="prose" style="padding:20px 10px"><h2>One request.<br>Every channel.</h2><p>A sourcing request reaches online marketplaces and physical venues at once. You see evidence and approve every lot before money moves.</p><button class="btn" onclick="go('desk')">Brief an agent</button></div>
+<div class="card"><ol class="steps">${[['Brief','Say what you need, your budget cap and your deadline.'],['Search','Your agent scans eBay, Facebook Marketplace, Mercari, TCGplayer and Whatnot, and pulls sold comps.'],['Shortlist','Candidates are ranked on price vs. comps, seller history and condition signals.'],['Scout','With your signed authorization, local scouts visit shops, shows and private sellers.'],['Inspect','Scouts upload photos, counts and condition checks for each lot.'],['Approve','You approve or pass on each lot. Nothing is bought without your signature.'],['Settle','Payment releases from escrow at pickup. Scouts are paid, fees are booked, buybacks follow.']].map((s,i)=>`<li><span class="n">${i+1}</span><div><b>${s[0]}</b><small>${s[1]}</small></div></li>`).join('')}</ol></div></div>
+<div class="section-h">TRUST AND SAFETY</div>
+<div class="grid g4">${[['Evidence first','Every scouted lot has photos, a count and a condition check attached before you decide.'],['You approve','Approvals and scout authorizations are signed by your wallet, with spend caps.'],['Escrowed payment','Funds release at pickup confirmation, not at listing or at visit.'],['Bonded scouts','Scouts post a $BULK bond and carry a public evidence-match score.']].map(x=>`<div class="card"><h3 style="font-size:21px">${x[0]}</h3><p style="font-size:15.5px;margin:0">${x[1]}</p></div>`).join('')}</div>
+<div class="section-h">QUESTIONS</div>
+<div style="max-width:900px;margin-top:10px">${[['Does BulkLot buy cards on my behalf automatically?','No. Agents search and scouts inspect, but every purchase needs your approval signed from your wallet. Enterprise accounts can set policies, such as auto-approve under a price, that you control.'],['What if a lot does not match the evidence?','Open a dispute from the request. Escrowed funds are held, the scout’s bond can be slashed, and the lot can be returned through the seller or relisted.'],['Which wallets work?','Any Solana wallet that supports the standard connect and sign-message flow, including Phantom, Solflare and Backpack.'],['Do I need $BULK to use BulkLot?','No. Plans and fees are priced in dollars. $BULK is bought back with net revenue and used for scout bonds.'],['Where do scouts operate?','In 9 US metros today. Local leads outside a covered metro fall back to online sourcing.']].map(q=>`<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`;
+
+/* ---------- Solana wallet (wallet provider + @solana/web3.js) ---------- */
+const W={pk:null,provider:null,id:null,verified:false,sol:null};let pending=null;
+const WALLETS=[
+ {id:'phantom',name:'Phantom',color:'#ab9ff2',url:'https://phantom.app/',get:()=>window.phantom?.solana?.isPhantom?window.phantom.solana:(window.solana?.isPhantom?window.solana:null)},
+ {id:'solflare',name:'Solflare',color:'#fc7227',url:'https://solflare.com/',get:()=>window.solflare?.isSolflare?window.solflare:null},
+ {id:'backpack',name:'Backpack',color:'#e33e3f',url:'https://backpack.app/',get:()=>window.backpack?.isBackpack?window.backpack:(window.xnft?.solana||null)}
+];
+function short(a){a=String(a);return a.slice(0,4)+'…'+a.slice(-4)}
+function toPk(raw){const s=raw?.toString?raw.toString():String(raw);try{return window.solanaWeb3?new solanaWeb3.PublicKey(s):{toString:()=>s,toBase58:()=>s}}catch(e){return null}}
+function renderWalletList(){
+  $('#wlist').innerHTML=WALLETS.map(w=>{const has=!!w.get();return `<button class="wl" onclick="connectWallet('${w.id}')"><span class="ic" style="background:${w.color}">${w.name[0]}</span><span><b style="font-weight:500">${w.name}</b></span><span class="st">${has?'Detected':'Install'}</span></button>`}).join('')+
+  (window.solanaWeb3?'':'<p class="muted" style="font-size:13.5px">Solana SDK did not load; connecting still works through your wallet.</p>');
+}
+async function connectWallet(id){
+  const w=WALLETS.find(x=>x.id===id);const p=w.get();
+  if(!p){window.open(w.url,'_blank','noopener');toast(`${w.name} isn't installed in this browser. Install it, then reload this page.`);return}
+  try{
+    const res=await p.connect();const raw=res?.publicKey||p.publicKey;const pk=toPk(raw);if(!pk)throw new Error('No public key returned');
+    setConnected(p,id,pk);closeModal();toast(`Connected ${w.name}: ${short(pk.toString())}`);
+    if(pending){const f=pending;pending=null;setTimeout(f,150)}
+  }catch(e){toast(e?.code===4001?'Connection request was rejected in your wallet.':'Could not connect: '+(e?.message||'unknown error'))}
+}
+function setConnected(p,id,pk){
+  W.provider=p;W.id=id;W.pk=pk.toString();W.verified=false;W.sol=null;store.set('bulklot.wallet',id);
+  if(!p.__bl){p.__bl=1;try{p.on&&p.on('accountChanged',np=>{if(np){W.pk=toPk(np).toString();W.verified=false;paintWallet();toast('Switched to '+short(W.pk))}else disconnect(true)});p.on&&p.on('disconnect',()=>disconnect(true))}catch(e){}}
+  paintWallet();fetchBalance();if(location.hash===''||location.hash==='#home')route();
+}
+async function fetchBalance(){
+  if(!window.solanaWeb3||!W.pk)return;
+  try{const c=new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'),'confirmed');
+    const lam=await Promise.race([c.getBalance(new solanaWeb3.PublicKey(W.pk)),new Promise((_,r)=>setTimeout(()=>r('t'),5000))]);
+    W.sol=lam/solanaWeb3.LAMPORTS_PER_SOL;paintWallet()}catch(e){W.sol=null}
+}
+function addrColor(a){let h=0;for(const c of a)h=(h*33+c.charCodeAt(0))>>>0;return `conic-gradient(from ${h%360}deg,hsl(${h%360} 45% 60%),hsl(${(h>>8)%360} 45% 45%),hsl(${h%360} 45% 60%))`}
+function paintWallet(){
+  const b=$('#walletBtn');
+  if(W.pk){b.classList.add('ghost');b.innerHTML=`<span class="av" style="background:${addrColor(W.pk)}"></span><span class="lbl">${short(W.pk)}</span>`;}
+  else{b.classList.remove('ghost');b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14.5h2"/></svg><span class="lbl">Connect wallet</span>';$('#wmenu').classList.remove('on')}
+  if(W.pk)$('#wmenu').innerHTML=`<div class="hd"><div class="muted" style="font-size:13px">${WALLETS.find(x=>x.id===W.id).name} on Solana mainnet</div><div style="font-weight:500;word-break:break-all;font-size:14px;margin:4px 0">${W.pk}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${W.verified?'<span class="chip ok"><i></i>Ownership verified</span>':'<span class="chip"><i></i>Not verified</span>'}${W.sol!=null?`<span class="chip">${fmt(W.sol,3)} SOL</span>`:''}</div></div>
+  <button onclick="copyAddr()">Copy address</button>${W.verified?'':'<button onclick="verifyOwnership()">Verify ownership<span class="muted">sign message</span></button>'}<button onclick="window.open('https://solscan.io/account/'+W.pk,'_blank','noopener')">View on Solscan ${I.ext}</button><button onclick="disconnect()">Disconnect</button>`;
+}
+function walletClick(){if(W.pk){$('#wmenu').classList.toggle('on')}else openModal('wallet')}
+function requireWallet(fn){if(W.pk)return fn();pending=fn;openModal('wallet');toast('Connect a wallet to continue.')}
+async function signText(text){
+  const p=W.provider;if(!p?.signMessage){toast('This wallet does not support message signing.');return false}
+  const msg=new TextEncoder().encode(text);
+  try{const res=await p.signMessage(msg,'utf8');const sig=res?.signature||res;
+    let ok=true;if(window.nacl&&window.solanaWeb3){ok=nacl.sign.detached.verify(msg,new Uint8Array(sig),new solanaWeb3.PublicKey(W.pk).toBytes())}
+    if(!ok){toast('Signature did not verify against your address.');return false}
+    W.verified=true;paintWallet();return true}
+  catch(e){toast(e?.code===4001?'Signature request was rejected in your wallet.':'Signing failed: '+(e?.message||'unknown error'));return false}
+}
+async function verifyOwnership(){$('#wmenu').classList.remove('on');const ok=await signText(`Sign in to BulkLot\n\nThis proves you own this wallet. It does not send a transaction or cost any fees.\n\nWallet: ${W.pk}\nIssued: ${new Date().toISOString()}\nNonce: ${Math.random().toString(36).slice(2,12)}`);if(ok)toast('Ownership verified.')}
+async function copyAddr(){try{await navigator.clipboard.writeText(W.pk);toast('Address copied.')}catch(e){const t=document.createElement('textarea');t.value=W.pk;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Address copied.')}catch(_){toast(W.pk)}t.remove()}$('#wmenu').classList.remove('on')}
+async function disconnect(silent){try{if(!silent&&W.provider?.disconnect)await W.provider.disconnect()}catch(e){}W.pk=null;W.provider=null;W.verified=false;store.set('bulklot.wallet','');paintWallet();if(!silent)toast('Wallet disconnected.');if(location.hash===''||location.hash==='#home')route()}
+function openModal(k){if(k==='wallet')renderWalletList();$('#m-'+k).classList.add('on');const b=$('#m-'+k).querySelector('button');b&&b.focus()}
+function closeModal(){document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));if(!W.pk)pending=null}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();$('#wmenu').classList.remove('on');$('#drawer').classList.remove('on')}});
+document.addEventListener('click',e=>{if(!e.target.closest('#wmenu')&&!e.target.closest('#walletBtn'))$('#wmenu').classList.remove('on')});
+async function eager(){const id=store.get('bulklot.wallet');if(!id)return;const w=WALLETS.find(x=>x.id===id);const p=w&&w.get();if(!p)return;try{const r=await p.connect({onlyIfTrusted:true});const pk=toPk(r?.publicKey||p.publicKey);if(pk)setConnected(p,id,pk)}catch(e){}}
+
+/* ---------- live ledger ---------- */
+const EV=[()=>['a',`Agent shortlisted ${2+Math.floor(Math.random()*9)} listings for REQ-${4700+Math.floor(Math.random()*300)}`],
+ ()=>['s',`@${HANDLES[Math.floor(Math.random()*HANDLES.length)]} uploaded inspection evidence`],
+ ()=>['ok',`Lot settled: ${fmt(500+Math.floor(Math.random()*9000))} bulk cards, ${usd(80+Math.floor(Math.random()*1400))}`],
+ ()=>['a',`Agent matched sold comps on ${['eBay','TCGplayer','Mercari','Whatnot'][Math.floor(Math.random()*4)]}`],
+ ()=>['s',`Scout dispatched to a ${VENUES[Math.floor(Math.random()*VENUES.length)].toLowerCase()} in ${METROS[Math.floor(Math.random()*METROS.length)]}`]];
+const ledger=[];function pushEv(){const [c,t]=EV[Math.floor(Math.random()*EV.length)]();ledger.unshift([now(),c,t]);ledger.length=Math.min(ledger.length,30);$('#ledger').innerHTML=ledger.map(e=>`<div class="ev"><span class="muted" style="flex:none">${e[0]}</span><span><span class="chip ${e[1]==='a'?'agent':e[1]==='s'?'scout':'ok'}" style="padding:2px 8px;margin-right:6px"><i></i></span>${e[2]}</span></div>`).join('')}
+for(let i=0;i<6;i++)pushEv();setInterval(pushEv,4200);
+function toggleDrawer(){$('#drawer').classList.toggle('on')}
+
+/* ---------- theme, layout, countdown ---------- */
+function curTheme(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}
+function paintTheme(){$('#themeLbl').textContent=curTheme()==='dark'?'Light mode':'Dark mode';document.querySelector('meta[name=theme-color]').content=curTheme()==='dark'?'#1a1a18':'#efece4'}
+function toggleTheme(){document.documentElement.dataset.theme=curTheme()==='dark'?'light':'dark';store.set('bulklot.theme',document.documentElement.dataset.theme);paintTheme()}
+function toggleCollapse(){$('#shell').classList.toggle('collapsed');store.set('bulklot.col',$('#shell').classList.contains('collapsed')?'1':'')}
+(function init(){const t=store.get('bulklot.theme');if(t)document.documentElement.dataset.theme=t;if(store.get('bulklot.col'))$('#shell').classList.add('collapsed');paintTheme();paintWallet();route();eager()})();
+let left=2*3600+14*60+9;setInterval(()=>{left=Math.max(0,left-1);const el=$('#cd');if(el){const h=String(Math.floor(left/3600)).padStart(2,'0'),m=String(Math.floor(left%3600/60)).padStart(2,'0'),s=String(left%60).padStart(2,'0');el.textContent=`${h}:${m}:${s}`}},1000);
+</script>
+</body>
+</html>
